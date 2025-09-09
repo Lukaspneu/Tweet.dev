@@ -1,0 +1,395 @@
+@import "tailwindcss";
+
+/* CSS Variables for the UI */
+:root {
+  --app-background: #0a0a0a;
+  --tweet-card-background: #0a0a0a;
+  --background: #0a0a0a;
+  --input: #1a1a1a;
+  --ring: #404040;
+  --muted-foreground: #a3a3a3;
+  --accent: #404040;
+  --accent-foreground: #ffffff;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: rgb(22, 22, 22);
+  color: #ffffff;
+  overflow: hidden;
+  height: 100vh;
+}
+
+html {
+  overflow: hidden;
+  height: 100vh;
+  background-color: rgb(22, 22, 22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent flash during page load */
+#root {
+  background-color: rgb(22, 22, 22);
+  min-height: 100vh;
+  width: 100vw;
+}
+
+/* Custom glow effect - removed */
+
+/* Custom dark grey for settings box */
+.settings-box {
+  background-color: rgb(32, 32, 32);
+}
+
+.settings-box-border {
+  border-color: rgb(32, 32, 32);
+}
+
+.settings-tabs {
+  background-color: rgb(32, 32, 32);
+}
+
+.settings-content {
+  background-color: rgb(32, 32, 32);
+}
+
+/* QR Code Modal styles */
+.qr-modal-bg {
+  background-color: rgb(32, 32, 32);
+}
+
+.qr-modal-border {
+  border-color: rgb(32, 32, 32);
+}
+
+.qr-modal-shadow {
+  box-shadow: 0 4px 4px 0 rgba(0,0,0,0.30), 0 8px 8px 0 rgba(0,0,0,0.45);
+}
+
+/* Clickable address animation */
+.clickable-address {
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.clickable-address:hover {
+  background-color: rgba(64, 64, 64, 0.3);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 4px rgba(192, 192, 192, 0.2);
+}
+
+/* Custom text selection styling - ultra smooth with 0.6x slower sensitivity */
+::selection {
+  background-color: rgb(185, 255, 93);
+  color: black;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  transition: all 0.67s ease-out;
+  animation: selectionSmooth 1.0s ease-out;
+}
+
+::-moz-selection {
+  background-color: rgb(185, 255, 93);
+  color: black;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  transition: all 0.67s ease-out;
+  animation: selectionSmooth 1.0s ease-out;
+}
+
+/* Very slow and smooth selection animation - 0.6x slower */
+@keyframes selectionSmooth {
+  0% {
+    background-color: rgba(185, 255, 93, 0.05);
+    transform: scale(1.08);
+    opacity: 0.1;
+  }
+  25% {
+    background-color: rgba(185, 255, 93, 0.2);
+    transform: scale(1.05);
+    opacity: 0.3;
+  }
+  50% {
+    background-color: rgba(185, 255, 93, 0.4);
+    transform: scale(1.03);
+    opacity: 0.5;
+  }
+  75% {
+    background-color: rgba(185, 255, 93, 0.7);
+    transform: scale(1.01);
+    opacity: 0.8;
+  }
+  100% {
+    background-color: rgb(185, 255, 93);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Optimize text rendering and reduce touchpad sensitivity */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+  -webkit-text-stroke: 0;
+  cursor: text;
+  transition: all 0.5s ease-out;
+  /* Touchpad sensitivity reduction */
+  -webkit-touch-action: manipulation;
+  touch-action: manipulation;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* 180 FPS Optimized Animation Styles */
+.motion-div {
+  /* Dynamic will-change based on device capabilities */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  /* Advanced performance optimizations for 180 FPS */
+  contain: layout style paint;
+  isolation: isolate;
+  /* GPU memory optimization - dynamic based on device */
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  /* Optimize for high refresh rate displays */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  /* Reduce composite layers */
+  z-index: 0;
+}
+
+/* 180 FPS Global Performance Optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+  -webkit-text-stroke: 0;
+  cursor: text;
+  /* Optimized transitions for 180 FPS */
+  transition: all 0.1s cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Touchpad sensitivity reduction */
+  -webkit-touch-action: manipulation;
+  touch-action: manipulation;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: auto;
+  /* Prevent color flickering at high refresh rates */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Force hardware acceleration for 180 FPS */
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+  /* Optimize rendering pipeline */
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+/* 180 FPS Keyframe Animations */
+@keyframes ultraSmoothSlideLeft {
+  0% {
+    transform: translateX(-100vw) translateZ(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ultraSmoothSlideRight {
+  0% {
+    transform: translateX(100vw) translateZ(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
+/* Dynamic Performance Scaling Based on Device Capabilities */
+@supports (will-change: transform) {
+  .motion-div {
+    will-change: transform, opacity;
+  }
+}
+
+/* 180 FPS Optimizations for High-End Devices */
+@media (min-resolution: 180dpi) and (min-width: 1024px) {
+  .motion-div {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+  }
+  
+  * {
+    transition: all 0.05s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+}
+
+/* 120 FPS Optimizations for Mid-Range Devices */
+@media (min-resolution: 120dpi) and (min-width: 768px) and (max-resolution: 179dpi) {
+  .motion-div {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+  }
+  
+  * {
+    transition: all 0.08s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+}
+
+/* 60 FPS Fallback for Lower-End Devices */
+@media (max-resolution: 119dpi) {
+  .motion-div {
+    transform-style: flat;
+    -webkit-transform-style: flat;
+    will-change: auto;
+  }
+  
+  * {
+    transition: all 0.15s ease-out;
+    transform-style: flat;
+    -webkit-transform-style: flat;
+  }
+}
+
+/* Launch Token Modal responsive sizing */
+.launch-token-modal {
+  width: min(90vw, 440px) !important;
+  height: min(85vh, 666px) !important;
+  aspect-ratio: 440 / 666;
+  max-width: 440px;
+  max-height: 666px;
+  min-width: 320px;
+  min-height: 500px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .launch-token-modal {
+    width: min(95vw, 440px) !important;
+    height: min(90vh, 666px) !important;
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .launch-token-modal {
+    width: min(98vw, 440px) !important;
+    height: min(95vh, 666px) !important;
+    padding: 0.75rem !important;
+  }
+}
+
+/* Ensure aspect ratio is maintained */
+@media (max-aspect-ratio: 440/666) {
+  .launch-token-modal {
+    width: min(90vw, 440px) !important;
+    height: calc(min(90vw, 440px) * 666 / 440) !important;
+  }
+}
+
+/* Settings Panel responsive sizing for smaller screens */
+@media (max-width: 768px) {
+  .settings-box {
+    width: min(95vw, 1200px) !important;
+    height: min(85vh, 700px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-box {
+    width: min(98vw, 1000px) !important;
+    height: min(90vh, 600px) !important;
+  }
+}
+
+/* Reduce touchpad and mouse sensitivity for text selection */
+body, html {
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  cursor: text;
+  pointer-events: auto;
+  /* Reduce touchpad/mouse sensitivity */
+  -webkit-touch-action: manipulation;
+  touch-action: manipulation;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* Smooth text selection with reduced touchpad/mouse sensitivity */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+  transition: all 0.5s ease-out;
+  pointer-events: auto;
+  -webkit-touch-callout: none;
+  /* Touchpad sensitivity reduction */
+  -webkit-touch-action: manipulation;
+  touch-action: manipulation;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* Reduce mouse sensitivity for interactive elements during selection */
+button, a {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+  pointer-events: auto;
+  -webkit-touch-callout: none;
+}
+
+/* Additional mouse sensitivity reduction for text selection */
+::selection {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  pointer-events: auto;
+}
+
+/* Background animation */
+@keyframes float {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+  33% {
+    background-position: 100% 0%, 0% 100%, 25% 75%;
+  }
+  66% {
+    background-position: 0% 100%, 100% 0%, 75% 25%;
+  }
+}
+
