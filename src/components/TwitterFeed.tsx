@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Search, RefreshCw, Trash2, Wifi, WifiOff } from 'lucide-react'
+import React, { useState } from 'react'
+import { Search, RefreshCw, Trash2 } from 'lucide-react'
 
 interface TwitterFeedProps {
   onLaunchModalOpen?: () => void
@@ -12,92 +12,17 @@ interface Tweet {
   timestamp: number
   profileImage?: string
   url?: string
-  author?: {
-    id: string
-    username: string
-    name: string
-    profilePicture?: string
-    isVerified?: boolean
-    isBlueVerified?: boolean
-    followers?: number
-    following?: number
-  }
-  metrics?: {
-    retweet_count: number
-    like_count: number
-    reply_count: number
-    quote_count: number
-    view_count: number
-    bookmark_count: number
-  }
-  source?: string
-  lang?: string
-  isReply?: boolean
-  conversationId?: string
 }
 
 const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [tweets, setTweets] = useState<Tweet[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [isConnected, setIsConnected] = useState(false)
-  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null)
 
   const handleDeployClick = () => {
     if (onLaunchModalOpen) {
       onLaunchModalOpen()
     }
   }
-
-  // Fetch tweets from webhook endpoint
-  const fetchWebhookTweets = async () => {
-    try {
-      console.log('🔄 Fetching tweets from webhook...')
-      
-      const response = await fetch('/api/tweets')
-      const data = await response.json()
-      
-      if (data.success && data.tweets) {
-        // Convert webhook tweets to our format
-        const convertedTweets: Tweet[] = data.tweets.map((tweet: any) => ({
-          id: tweet.id,
-          username: tweet.author?.username || 'seven100x',
-          text: tweet.text,
-          timestamp: new Date(tweet.createdAt).getTime(),
-          profileImage: tweet.author?.profilePicture || `https://avatars.githubusercontent.com/u/1?v=4`,
-          url: tweet.url,
-          author: tweet.author,
-          metrics: tweet.metrics,
-          source: tweet.source,
-          lang: tweet.lang,
-          isReply: tweet.isReply,
-          conversationId: tweet.conversationId
-        }))
-        
-        setTweets(convertedTweets)
-        setIsConnected(true)
-        setLastFetchTime(new Date())
-        
-        console.log(`📊 Fetched ${convertedTweets.length} tweets from webhook`)
-      } else {
-        console.log('📭 No tweets available from webhook')
-        setIsConnected(false)
-      }
-    } catch (error) {
-      console.error('❌ Error fetching webhook tweets:', error)
-      setIsConnected(false)
-    }
-  }
-
-  // Poll for new tweets every 5 seconds
-  useEffect(() => {
-    // Initial fetch
-    fetchWebhookTweets()
-    
-    // Set up polling
-    const interval = setInterval(fetchWebhookTweets, 5000)
-    
-    return () => clearInterval(interval)
-  }, [])
 
   const formatTimeAgo = (timestamp: number) => {
     const now = Date.now()
@@ -151,22 +76,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
           </div>
         </div>
         
-        {/* Webhook Status */}
-        <div className="flex items-center gap-1 text-xs" style={{color: isConnected ? 'rgb(185, 255, 93)' : 'rgb(255, 100, 100)'}}>
-          {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-          {isConnected ? 'Webhook Active' : 'Webhook Offline'}
-        </div>
-        
         {/* Action Buttons */}
-        <button 
-          onClick={fetchWebhookTweets}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity" 
-          style={{backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)'}} 
-          title="Refresh Webhook"
-        >
-          <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" style={{color: 'rgb(192,192,192)'}} />
-        </button>
-        
         <button 
           onClick={addTestTweet}
           className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity" 
@@ -191,48 +101,26 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
         {filteredTweets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{backgroundColor: 'rgb(40,40,40)'}}>
-              {isConnected ? <Wifi className="w-8 h-8" style={{color: 'rgb(185, 255, 93)'}} /> : <WifiOff className="w-8 h-8" style={{color: 'rgb(255, 100, 100)'}} />}
+              <Search className="w-8 h-8" style={{color: 'rgb(185, 255, 93)'}} />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {isConnected ? 'Webhook Connected' : 'Waiting for Webhook'}
-            </h3>
+            <h3 className="text-lg font-semibold text-white mb-2">No Tweets Yet</h3>
             <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
-              {isConnected ? 'Monitoring @seven100x via webhook' : 'Setting up webhook connection...'}
+              Add some test tweets to see them here
             </p>
-            
-            {lastFetchTime && (
-              <div className="mb-4 p-3 rounded-lg text-xs" style={{backgroundColor: 'rgb(40,40,40)', color: 'rgb(192,192,192)', border: '1px solid rgb(80,80,80)'}}>
-                Last fetch: {lastFetchTime.toLocaleTimeString()}
-              </div>
-            )}
-            
             <div className="flex gap-2 mt-4">
               <button 
-                onClick={fetchWebhookTweets}
+                onClick={addTestTweet}
                 className="px-3 py-1 rounded text-xs font-medium transition-colors"
                 style={{
                   backgroundColor: 'rgb(185, 255, 93)',
                   color: 'rgb(0,0,0)'
                 }}
               >
-                Refresh Webhook
-              </button>
-              
-              <button 
-                onClick={addTestTweet}
-                className="px-3 py-1 rounded text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: 'rgb(30,30,30)',
-                  color: 'rgb(192,192,192)',
-                  border: '1px solid rgb(80,80,80)'
-                }}
-              >
                 Add Test Tweet
               </button>
             </div>
-            
             <div className="mt-2 text-xs" style={{color: 'rgb(192,192,192)'}}>
-              {isConnected ? 'Webhook polling every 5s • Rule: 0cdc452da1fd4da8b213ca5482809673' : 'TwitterAPI.io webhook integration'}
+              Ready for Twitter integration
             </div>
           </div>
         ) : (
@@ -252,57 +140,15 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-white text-sm">
-                        {tweet.author?.name || tweet.username}
-                      </span>
-                      <span className="text-xs" style={{color: 'rgb(192,192,192)'}}>
-                        @{tweet.username}
-                      </span>
-                      
-                      {/* Verification Badges */}
-                      {tweet.author?.isVerified && (
-                        <span className="text-blue-400 text-xs">✓</span>
-                      )}
-                      {tweet.author?.isBlueVerified && (
-                        <span className="text-blue-400 text-xs">✓</span>
-                      )}
-                      
+                      <span className="font-semibold text-white text-sm">@{tweet.username}</span>
                       <span className="text-xs" style={{color: 'rgb(192,192,192)'}}>
                         {formatTimeAgo(tweet.timestamp)}
                       </span>
                     </div>
-                    
-                    {/* Source Information */}
-                    {tweet.source && (
-                      <div className="text-xs mb-2" style={{color: 'rgb(120,120,120)'}}>
-                        via {tweet.source}
-                      </div>
-                    )}
 
                     <p className="text-sm text-white leading-relaxed mb-2">
                       {tweet.text}
                     </p>
-                    
-                    {/* Tweet Metrics */}
-                    {tweet.metrics && (tweet.metrics.like_count > 0 || tweet.metrics.retweet_count > 0 || tweet.metrics.reply_count > 0) && (
-                      <div className="flex items-center gap-4 mb-2 text-xs" style={{color: 'rgb(120,120,120)'}}>
-                        {tweet.metrics.like_count > 0 && (
-                          <span>❤️ {tweet.metrics.like_count}</span>
-                        )}
-                        {tweet.metrics.retweet_count > 0 && (
-                          <span>🔄 {tweet.metrics.retweet_count}</span>
-                        )}
-                        {tweet.metrics.reply_count > 0 && (
-                          <span>💬 {tweet.metrics.reply_count}</span>
-                        )}
-                        {tweet.metrics.quote_count > 0 && (
-                          <span>💭 {tweet.metrics.quote_count}</span>
-                        )}
-                        {tweet.metrics.view_count > 0 && (
-                          <span>👁️ {tweet.metrics.view_count}</span>
-                        )}
-                      </div>
-                    )}
                     
                     {tweet.url && (
                       <a 
