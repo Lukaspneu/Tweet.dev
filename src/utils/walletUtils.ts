@@ -70,4 +70,4 @@ export const SECURITY_WARNINGS = {
   PRIVATE_KEY_STORAGE: '🔒 Your private key is never stored on our servers. It\'s only temporarily held in your browser\'s memory for security.',
   BACKUP_RECOMMENDATION: '💾 Always backup your private key in a secure location. If you lose it, you\'ll lose access to your wallet forever.',
   PHISHING_WARNING: '🚨 Never enter your private key on suspicious websites. Always verify you\'re on the official site.',
-}
+} as const

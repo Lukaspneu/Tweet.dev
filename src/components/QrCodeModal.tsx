@@ -101,7 +101,7 @@ const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => {
                   <div className="w-1/2">
                     <div className="group border border-gray-600 flex flex-row w-full h-[32px] gap-[8px] px-[12px] rounded justify-start items-center">
                       <img 
-                        src="/solanalogo.png" 
+                        src="/Solanalogo.png" 
                         alt="SOL" 
                         className="w-4 h-4"
                       />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import TwitterFeed from '../components/TwitterFeed'
@@ -6,13 +6,8 @@ import YourTokens from '../components/YourTokens'
 import SettingsPanel from '../components/SettingsPanel'
 import LaunchTokenModal from '../components/LaunchTokenModal'
 
-const Dashboard: React.FC = () => {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [selectedTab, setSelectedTab] = useState('General')
-  const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(false)
-
-  // Simple animation variants
-  const leftBoxVariants = {
+const ANIMATION_VARIANTS = {
+  leftBox: {
     hidden: { x: '-100vw', opacity: 0 },
     visible: { 
       x: 0, 
@@ -26,9 +21,8 @@ const Dashboard: React.FC = () => {
         ease: [0.25, 0.1, 0.25, 1]
       }
     }
-  }
-
-  const rightBoxVariants = {
+  },
+  rightBox: {
     hidden: { x: '100vw', opacity: 0 },
     visible: { 
       x: 0, 
@@ -43,47 +37,45 @@ const Dashboard: React.FC = () => {
       }
     }
   }
+}
 
-  const handleSettingsClick = () => {
-    setIsSettingsOpen(true)
-  }
+const BACKGROUND_STYLE = {
+  backgroundColor: 'rgb(22,22,22)',
+  minHeight: '100vh',
+  width: '100vw'
+}
 
-  const handleSettingsClose = () => {
-    setIsSettingsOpen(false)
-  }
+const BACKGROUND_GRADIENT = `
+  radial-gradient(ellipse 1200px 800px at 20% 30%, rgba(185, 255, 93, 0.08) 0%, transparent 50%),
+  radial-gradient(ellipse 1000px 600px at 80% 70%, rgba(185, 255, 93, 0.06) 0%, transparent 50%),
+  radial-gradient(ellipse 800px 1000px at 50% 10%, rgba(185, 255, 93, 0.04) 0%, transparent 60%),
+  linear-gradient(180deg, rgba(185, 255, 93, 0.02) 0%, transparent 30%, transparent 70%, rgba(185, 255, 93, 0.01) 100%)
+`
 
-  const handleWalletClick = () => {
+const Dashboard: React.FC = () => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [selectedTab, setSelectedTab] = useState('General')
+  const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(false)
+
+  const handleSettingsClick = useCallback(() => setIsSettingsOpen(true), [])
+  const handleSettingsClose = useCallback(() => setIsSettingsOpen(false), [])
+  const handleWalletClick = useCallback(() => {
     setSelectedTab('Wallet Manager')
     setIsSettingsOpen(true)
-  }
-
-  const handleLaunchModalOpen = () => {
-    setIsLaunchModalOpen(true)
-  }
-
-  const handleLaunchModalClose = () => {
-    setIsLaunchModalOpen(false)
-  }
+  }, [])
+  const handleLaunchModalOpen = useCallback(() => setIsLaunchModalOpen(true), [])
+  const handleLaunchModalClose = useCallback(() => setIsLaunchModalOpen(false), [])
 
   return (
-    <div 
-      className="h-screen overflow-hidden" 
-      style={{ 
-        backgroundColor: 'rgb(22,22,22)',
-        minHeight: '100vh',
-        width: '100vw'
-      }}
-    >
+    <div className="h-screen overflow-hidden" style={BACKGROUND_STYLE}>
       {/* Background */}
-      <div className="fixed inset-0" style={{
-        background: `
-          radial-gradient(ellipse 1200px 800px at 20% 30%, rgba(185, 255, 93, 0.08) 0%, transparent 50%),
-          radial-gradient(ellipse 1000px 600px at 80% 70%, rgba(185, 255, 93, 0.06) 0%, transparent 50%),
-          radial-gradient(ellipse 800px 1000px at 50% 10%, rgba(185, 255, 93, 0.04) 0%, transparent 60%),
-          linear-gradient(180deg, rgba(185, 255, 93, 0.02) 0%, transparent 30%, transparent 70%, rgba(185, 255, 93, 0.01) 100%)
-        `,
-        backgroundColor: 'rgb(22,22,22)'
-      }}>
+      <div 
+        className="fixed inset-0" 
+        style={{
+          background: BACKGROUND_GRADIENT,
+          backgroundColor: 'rgb(22,22,22)'
+        }}
+      >
       </div>
       
       <Navbar onSettingsClick={handleSettingsClick} onWalletClick={handleWalletClick} />
@@ -95,7 +87,7 @@ const Dashboard: React.FC = () => {
             {/* Twitter Feed */}
             <motion.div 
               className="flex-1 min-w-0 h-full max-w-full"
-              variants={leftBoxVariants}
+              variants={ANIMATION_VARIANTS.leftBox}
               initial="hidden"
               animate="visible"
             >
@@ -106,7 +98,7 @@ const Dashboard: React.FC = () => {
             <motion.div
               className="flex-shrink-0 hidden xl:block h-full"
               style={{ width: '350px' }}
-              variants={rightBoxVariants}
+              variants={ANIMATION_VARIANTS.rightBox}
               initial="hidden"
               animate="visible"
             >

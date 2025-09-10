@@ -116,8 +116,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, selected
                     style={{ 
                       backgroundColor: 'rgba(0, 0, 0, 0.2)', 
                       borderColor: 'rgba(80, 80, 80, 0.3)',
-                      color: 'white',
-                      focusRingColor: 'rgba(185, 255, 93, 0.3)'
+                      color: 'white'
                     }}
                     readOnly 
                     value="https://extract.dev/ref/your-code" 
@@ -279,7 +278,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, selected
                 {/* Section Boxes */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                   {settingsItems.map((item) => {
-                    const Icon = item.icon
                     const isActive = selectedTab === item.id
                     
                     return (

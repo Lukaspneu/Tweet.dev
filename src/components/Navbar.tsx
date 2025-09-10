@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Share2 } from 'lucide-react'
 import SettingsButton from './SettingsButton'
 import HeaderActions from './HeaderActions'
@@ -9,26 +9,30 @@ interface NavbarProps {
   onWalletClick: () => void
 }
 
+const NAVBAR_STYLE = {
+  backgroundColor: 'rgb(30,30,30)',
+  borderColor: 'rgb(80,80,80)'
+}
+
 const Navbar: React.FC<NavbarProps> = ({ onSettingsClick, onWalletClick }) => {
   const [showQrModal, setShowQrModal] = useState(false)
   const [qrModalOpenedManually, setQrModalOpenedManually] = useState(false)
 
-  const handleWalletClick = () => {
-    onWalletClick()
-  }
-
-  const handleQrClick = () => {
+  const handleQrClick = useCallback(() => {
     setQrModalOpenedManually(true)
     setShowQrModal(true)
-  }
+  }, [])
 
-  const handleQrClose = () => {
+  const handleQrClose = useCallback(() => {
     setQrModalOpenedManually(false)
     setShowQrModal(false)
-  }
+  }, [])
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b h-12 flex items-center justify-between px-6" style={{ backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)' }}>
+    <nav 
+      className="fixed top-0 left-0 right-0 z-50 border-b h-12 flex items-center justify-between px-6" 
+      style={NAVBAR_STYLE}
+    >
       {/* Left side */}
       <div className="flex items-center space-x-3">
         <img 
@@ -54,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSettingsClick, onWalletClick }) => {
 
       {/* Right side */}
       <div className="flex items-center space-x-3">
-        <HeaderActions onWalletClick={handleWalletClick} onQrClick={handleQrClick} />
+        <HeaderActions onWalletClick={onWalletClick} onQrClick={handleQrClick} />
         <SettingsButton onClick={onSettingsClick} />
       </div>
 

@@ -34,7 +34,9 @@ interface WalletState {
   tempPrivateKeys: Map<string, string>
 }
 
-// RPC endpoint - using mainnet Solana RPC with API key
+const generateWalletId = (): string => 
+  `wallet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
 const SOLANA_RPC_URL = 'https://solana-mainnet.rpc.extrnode.com/a2988063-b48c-45cd-9ca8-3ce429f65e0f'
 
 export const useWalletStore = create<WalletState>((set, get) => ({
@@ -51,7 +53,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const { privateKey, publicKey } = WalletUtils.generateKeypair()
       
       const wallet: Wallet = {
-        id: `wallet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        id: generateWalletId(),
         name,
         publicKey,
       }
@@ -79,7 +81,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const { publicKey } = WalletUtils.importFromPrivateKey(privateKey)
       
       const wallet: Wallet = {
-        id: `wallet_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        id: generateWalletId(),
         name,
         publicKey,
       }
