@@ -16,10 +16,24 @@ interface Tweet {
     id: string
     username: string
     name: string
+    profilePicture?: string
+    isVerified?: boolean
+    isBlueVerified?: boolean
+    followers?: number
+    following?: number
   }
-  retweet_count?: number
-  like_count?: number
-  reply_count?: number
+  metrics?: {
+    retweet_count: number
+    like_count: number
+    reply_count: number
+    quote_count: number
+    view_count: number
+    bookmark_count: number
+  }
+  source?: string
+  lang?: string
+  isReply?: boolean
+  conversationId?: string
 }
 
 const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
@@ -48,13 +62,15 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
           id: tweet.id,
           username: tweet.author?.username || 'seven100x',
           text: tweet.text,
-          timestamp: new Date(tweet.created_at).getTime(),
-          profileImage: `https://avatars.githubusercontent.com/u/1?v=4`,
-          url: `https://twitter.com/${tweet.author?.username || 'seven100x'}/status/${tweet.id}`,
+          timestamp: new Date(tweet.createdAt).getTime(),
+          profileImage: tweet.author?.profilePicture || `https://avatars.githubusercontent.com/u/1?v=4`,
+          url: tweet.url,
           author: tweet.author,
-          retweet_count: tweet.retweet_count,
-          like_count: tweet.like_count,
-          reply_count: tweet.reply_count
+          metrics: tweet.metrics,
+          source: tweet.source,
+          lang: tweet.lang,
+          isReply: tweet.isReply,
+          conversationId: tweet.conversationId
         }))
         
         setTweets(convertedTweets)
@@ -236,27 +252,54 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-white text-sm">@{tweet.username}</span>
+                      <span className="font-semibold text-white text-sm">
+                        {tweet.author?.name || tweet.username}
+                      </span>
+                      <span className="text-xs" style={{color: 'rgb(192,192,192)'}}>
+                        @{tweet.username}
+                      </span>
+                      
+                      {/* Verification Badges */}
+                      {tweet.author?.isVerified && (
+                        <span className="text-blue-400 text-xs">✓</span>
+                      )}
+                      {tweet.author?.isBlueVerified && (
+                        <span className="text-blue-400 text-xs">✓</span>
+                      )}
+                      
                       <span className="text-xs" style={{color: 'rgb(192,192,192)'}}>
                         {formatTimeAgo(tweet.timestamp)}
                       </span>
-      </div>
+                    </div>
+                    
+                    {/* Source Information */}
+                    {tweet.source && (
+                      <div className="text-xs mb-2" style={{color: 'rgb(120,120,120)'}}>
+                        via {tweet.source}
+                      </div>
+                    )}
 
                     <p className="text-sm text-white leading-relaxed mb-2">
                       {tweet.text}
                     </p>
                     
                     {/* Tweet Metrics */}
-                    {(tweet.like_count || tweet.retweet_count || tweet.reply_count) && (
+                    {tweet.metrics && (tweet.metrics.like_count > 0 || tweet.metrics.retweet_count > 0 || tweet.metrics.reply_count > 0) && (
                       <div className="flex items-center gap-4 mb-2 text-xs" style={{color: 'rgb(120,120,120)'}}>
-                        {tweet.like_count && tweet.like_count > 0 && (
-                          <span>❤️ {tweet.like_count}</span>
+                        {tweet.metrics.like_count > 0 && (
+                          <span>❤️ {tweet.metrics.like_count}</span>
                         )}
-                        {tweet.retweet_count && tweet.retweet_count > 0 && (
-                          <span>🔄 {tweet.retweet_count}</span>
+                        {tweet.metrics.retweet_count > 0 && (
+                          <span>🔄 {tweet.metrics.retweet_count}</span>
                         )}
-                        {tweet.reply_count && tweet.reply_count > 0 && (
-                          <span>💬 {tweet.reply_count}</span>
+                        {tweet.metrics.reply_count > 0 && (
+                          <span>💬 {tweet.metrics.reply_count}</span>
+                        )}
+                        {tweet.metrics.quote_count > 0 && (
+                          <span>💭 {tweet.metrics.quote_count}</span>
+                        )}
+                        {tweet.metrics.view_count > 0 && (
+                          <span>👁️ {tweet.metrics.view_count}</span>
                         )}
                       </div>
                     )}

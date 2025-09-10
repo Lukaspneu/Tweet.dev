@@ -34,40 +34,78 @@ export default async function handler(req, res) {
       event_type: webhookData.event_type,
       rule_id: webhookData.rule_id,
       rule_tag: webhookData.rule_tag,
+      rule_value: webhookData.rule_value,
       tweet_count: webhookData.tweets?.length || 0,
       timestamp: webhookData.timestamp
     })
 
-    // Process tweets from webhook
+    // Process tweets from webhook - handle the specific structure you provided
     if (webhookData.tweets && webhookData.tweets.length > 0) {
       const processedTweets = webhookData.tweets.map(tweet => ({
         id: tweet.id,
         text: tweet.text,
-        author: tweet.author,
-        created_at: tweet.created_at,
-        retweet_count: tweet.retweet_count || 0,
-        like_count: tweet.like_count || 0,
-        reply_count: tweet.reply_count || 0
+        url: tweet.url || tweet.twitterUrl,
+        createdAt: tweet.createdAt,
+        author: {
+          id: tweet.author?.id,
+          username: tweet.author?.userName,
+          name: tweet.author?.name,
+          profilePicture: tweet.author?.profilePicture,
+          isVerified: tweet.author?.isVerified,
+          isBlueVerified: tweet.author?.isBlueVerified,
+          followers: tweet.author?.followers,
+          following: tweet.author?.following
+        },
+        metrics: {
+          retweet_count: tweet.retweetCount || 0,
+          like_count: tweet.likeCount || 0,
+          reply_count: tweet.replyCount || 0,
+          quote_count: tweet.quoteCount || 0,
+          view_count: tweet.viewCount || 0,
+          bookmark_count: tweet.bookmarkCount || 0
+        },
+        source: tweet.source,
+        lang: tweet.lang,
+        isReply: tweet.isReply,
+        conversationId: tweet.conversationId
       }))
 
       console.log(`📊 Processed ${processedTweets.length} tweets from webhook`)
       
       // Store tweets in a simple in-memory store (in production, use a database)
-      // For now, we'll just log them and return success
       global.webhookTweets = global.webhookTweets || []
-      global.webhookTweets.unshift(...processedTweets)
+      
+      // Add new tweets and avoid duplicates
+      processedTweets.forEach(newTweet => {
+        const exists = global.webhookTweets.find(existingTweet => existingTweet.id === newTweet.id)
+        if (!exists) {
+          global.webhookTweets.unshift(newTweet)
+        }
+      })
       
       // Keep only last 50 tweets
       global.webhookTweets = global.webhookTweets.slice(0, 50)
       
       console.log(`📊 Total tweets stored: ${global.webhookTweets.length}`)
+      
+      // Log the latest tweet for debugging
+      if (processedTweets.length > 0) {
+        const latestTweet = processedTweets[0]
+        console.log('🐦 Latest tweet:', {
+          id: latestTweet.id,
+          text: latestTweet.text,
+          author: latestTweet.author.username,
+          metrics: latestTweet.metrics
+        })
+      }
     }
 
     // Return success response
     res.status(200).json({ 
       success: true, 
       message: 'Webhook processed successfully',
-      tweet_count: webhookData.tweets?.length || 0
+      tweet_count: webhookData.tweets?.length || 0,
+      rule_id: webhookData.rule_id
     })
 
   } catch (error) {
