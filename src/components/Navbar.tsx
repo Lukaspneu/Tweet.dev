@@ -41,7 +41,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSettingsClick, onWalletClick }) => {
           className="h-8 w-auto rounded purple-glow"
         />
         <div className="flex flex-col">
-          <span className="text-white font-semibold text-base leading-none purple-glow-text">Extract.dev</span>
+          <span className="text-white font-semibold text-base leading-none purple-glow-text">DevDeck</span>
           <div className="flex items-center space-x-1 mt-0.5">
             <a 
               href="https://discord.gg/XqRwqyM9EE" 

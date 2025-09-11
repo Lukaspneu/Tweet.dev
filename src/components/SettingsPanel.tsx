@@ -119,7 +119,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, selected
                       color: 'white'
                     }}
                     readOnly 
-                    value="https://extract.dev/ref/your-code" 
+                    value="https://devdeck.com/ref/your-code" 
                   />
                 </div>
                 <button className="px-3 py-2 text-xs font-medium rounded-lg transition-colors flex items-center gap-1" style={{ 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Search, RefreshCw, Trash2 } from 'lucide-react'
 
 interface TwitterFeedProps {
@@ -51,7 +51,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       {
         username: 'seven100x',
         displayName: 'Seven100x',
-        text: '🚀 Just launched a new token! Check it out on Extract.dev - the ultimate platform for token creation and management. #DeFi #Solana #TokenLaunch',
+        text: '🚀 Just launched a new token! Check it out on DevDeck - the ultimate platform for token creation and management. #DeFi #Solana #TokenLaunch',
         profileImage: 'https://avatars.githubusercontent.com/u/1?v=4',
         followerCount: '12.3K',
         url: 'https://twitter.com/seven100x'
@@ -136,6 +136,127 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
         profileImage: 'https://pbs.twimg.com/profile_images/1278253934565117952/7Kj6Zb5m_normal.jpg',
         followerCount: '3.2M',
         url: 'https://twitter.com/TechCrunch'
+      },
+      {
+        username: 'El_Cooperante',
+        displayName: 'El Cooperante',
+        text: '#11Sep 📰| ⚽🇻🇪 Batista tras derrota ante Colombia: "Estábamos atrás de un sueño que no pudo ser"',
+        profileImage: 'https://pbs.twimg.com/profile_images/1340660710720847874/mMOODVAK_normal.jpg',
+        followerCount: '439.6K',
+        url: 'https://elcooperante.com/es-un-momento-muy-duro-batista-pidio-disculpas-al-pueblo-venezolano-tras-derrota-de-la-vinotinto-ante-colombia/',
+        imageUrl: 'https://pbs.twimg.com/card_img/1965729940898504704/Pv0WBH5W?format=jpg&name=600x600'
+      },
+      {
+        username: 'HoloworldAI',
+        displayName: 'Holoworld AI',
+        text: '@pudgypenguins Give me the two',
+        profileImage: 'https://pbs.twimg.com/profile_images/1654902057646825473/GKppeqtS_normal.png',
+        followerCount: '209.8K',
+        url: 'https://x.com/HoloworldAI/status/1966223063219056909',
+        imageUrl: 'https://pbs.twimg.com/media/G0lqtz_WoAAEMOU.jpg'
+      },
+      {
+        username: 'WashTimes',
+        displayName: 'The Washington Times',
+        text: 'Pope Leo\'s Augustinian order elects an American superior to lead during papacy of American pope @twthigherground',
+        profileImage: 'https://pbs.twimg.com/profile_images/1755281859146080256/D-S95q4t_normal.png',
+        followerCount: '471.7K',
+        url: 'https://trib.al/2Jn43EF'
+      },
+      {
+        username: 'NASA',
+        displayName: 'NASA',
+        text: '🚀 BREAKING: James Webb Space Telescope captures stunning new images of distant galaxies formed just 400 million years after the Big Bang! These observations are revolutionizing our understanding of the early universe. #JWSTScience #SpaceExploration',
+        profileImage: 'https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_normal.jpg',
+        followerCount: '56.8M',
+        url: 'https://www.nasa.gov/news',
+        imageUrl: 'https://pbs.twimg.com/media/GXample1.jpg'
+      },
+      {
+        username: 'SpaceX',
+        displayName: 'SpaceX',
+        text: 'Successful launch of Falcon Heavy! All three boosters have landed safely. Next stop: Mars mission preparation continues. The future of space exploration is here! 🚀',
+        profileImage: 'https://pbs.twimg.com/profile_images/1082744382585856001/rH_k3PtQ_normal.jpg',
+        followerCount: '21.2M',
+        url: 'https://spacex.com',
+        imageUrl: 'https://pbs.twimg.com/media/GXample2.jpg'
+      },
+      {
+        username: 'Apple',
+        displayName: 'Apple',
+        text: 'Introducing the new iPhone 15 Pro with titanium design and revolutionary camera system. Shot on iPhone has never looked better. Pre-orders start Friday! #iPhone15Pro',
+        profileImage: 'https://pbs.twimg.com/profile_images/1283958620359516160/p7zz5dxZ_normal.jpg',
+        followerCount: '8.9M',
+        url: 'https://apple.com',
+        imageUrl: 'https://pbs.twimg.com/media/GXample3.jpg'
+      },
+      {
+        username: 'Microsoft',
+        displayName: 'Microsoft',
+        text: 'AI for everyone: Microsoft Copilot is now available across all our productivity apps. Transform how you work with intelligent assistance built right into Office 365. #MicrosoftCopilot #AI',
+        profileImage: 'https://pbs.twimg.com/profile_images/1527729170741387264/9ZuLNZT6_normal.jpg',
+        followerCount: '7.3M',
+        url: 'https://microsoft.com'
+      },
+      {
+        username: 'GoogleAI',
+        displayName: 'Google AI',
+        text: 'Breakthrough in quantum computing: Our new quantum processor achieved quantum supremacy in under 5 minutes for problems that would take classical computers millennia. The future is quantum! #QuantumComputing',
+        profileImage: 'https://pbs.twimg.com/profile_images/1244313503858339840/y-3KNhGs_normal.png',
+        followerCount: '2.1M',
+        url: 'https://ai.google',
+        imageUrl: 'https://pbs.twimg.com/media/GXample4.jpg'
+      },
+      {
+        username: 'OpenAI',
+        displayName: 'OpenAI',
+        text: 'GPT-5 development update: We\'re making significant progress on reasoning capabilities and multimodal understanding. Safety remains our top priority as we advance toward AGI.',
+        profileImage: 'https://pbs.twimg.com/profile_images/1634058036934500352/b4F1eVpJ_normal.jpg',
+        followerCount: '4.7M',
+        url: 'https://openai.com'
+      },
+      {
+        username: 'NatGeo',
+        displayName: 'National Geographic',
+        text: '🐋 Incredible discovery: Scientists have documented the largest blue whale migration ever recorded, spanning over 12,000 miles across the Pacific Ocean. Climate change impacts on marine life continue to surprise researchers.',
+        profileImage: 'https://pbs.twimg.com/profile_images/1264550654701088768/2S2rMxwX_normal.jpg',
+        followerCount: '15.4M',
+        url: 'https://nationalgeographic.com',
+        imageUrl: 'https://pbs.twimg.com/media/GXample5.jpg'
+      },
+      {
+        username: 'UN',
+        displayName: 'United Nations',
+        text: '🌍 Global climate summit reaches historic agreement: 195 countries commit to net-zero emissions by 2050. Together, we can build a sustainable future for all. #ClimateAction #UN2030',
+        profileImage: 'https://pbs.twimg.com/profile_images/1184886655925022720/n5l8Mg5q_normal.jpg',
+        followerCount: '4.2M',
+        url: 'https://un.org'
+      },
+      {
+        username: 'WHO',
+        displayName: 'World Health Organization',
+        text: '💉 Vaccine breakthrough: New universal flu vaccine shows 95% effectiveness against all known strains in Phase 3 trials. This could revolutionize seasonal flu prevention worldwide.',
+        profileImage: 'https://pbs.twimg.com/profile_images/1280166317000617984/yjJaOXnR_normal.jpg',
+        followerCount: '8.1M',
+        url: 'https://who.int'
+      },
+      {
+        username: 'verge',
+        displayName: 'The Verge',
+        text: 'Meta\'s new VR headset leaked: 8K per eye, brain-computer interface, and haptic gloves included. The metaverse just got a major upgrade. Full review coming soon! #MetaVR #VirtualReality',
+        profileImage: 'https://pbs.twimg.com/profile_images/1644356935428268032/8sz7cSTQ_normal.jpg',
+        followerCount: '2.8M',
+        url: 'https://theverge.com',
+        imageUrl: 'https://pbs.twimg.com/media/GXample6.jpg'
+      },
+      {
+        username: 'Tesla',
+        displayName: 'Tesla',
+        text: '⚡ Cybertruck production ramping up! First deliveries begin next month. Full autonomy testing shows 99.9% safety improvement over human drivers. The future of transportation is electric! #Cybertruck',
+        profileImage: 'https://pbs.twimg.com/profile_images/1337607516008501250/6Ggc4S5n_normal.png',
+        followerCount: '19.3M',
+        url: 'https://tesla.com',
+        imageUrl: 'https://pbs.twimg.com/media/GXample7.jpg'
       }
     ]
 

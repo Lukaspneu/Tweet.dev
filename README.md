@@ -1,6 +1,6 @@
-# Xdeploy Dashboard
+# DevDeck
 
-A modern, dark-themed dashboard application built with React, TypeScript, and Tailwind CSS v4. This application recreates the Xdeploy dashboard interface with full functionality and responsive design.
+A modern Twitter-like feed application built with React, TypeScript, and Tailwind CSS. DevDeck provides a real-time social media experience with diverse content from tech companies, news organizations, and global institutions.
 
 ## Features
 
