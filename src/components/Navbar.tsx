@@ -36,9 +36,9 @@ const Navbar: React.FC<NavbarProps> = ({ onSettingsClick, onWalletClick }) => {
       {/* Left side */}
       <div className="flex items-center space-x-3">
         <img 
-          src="/newha.png" 
+          src="/logo1.png" 
           alt="Logo" 
-          className="w-7 h-7 rounded purple-glow"
+          className="h-8 w-auto rounded purple-glow"
         />
         <div className="flex flex-col">
           <span className="text-white font-semibold text-base leading-none purple-glow-text">Extract.dev</span>
