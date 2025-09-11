@@ -1,6 +1,6 @@
-# DevDeck
+# DeckDev
 
-A modern Twitter-like feed application built with React, TypeScript, and Tailwind CSS. DevDeck provides a real-time social media experience with diverse content from tech companies, news organizations, and global institutions.
+A modern Twitter-like feed application built with React, TypeScript, and Tailwind CSS. DeckDev provides a real-time social media experience with diverse content from tech companies, news organizations, and global institutions.
 
 ## Features
 

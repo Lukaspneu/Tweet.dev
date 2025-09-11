@@ -51,7 +51,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       {
         username: 'seven100x',
         displayName: 'Seven100x',
-        text: '🚀 Just launched a new token! Check it out on DevDeck - the ultimate platform for token creation and management. #DeFi #Solana #TokenLaunch',
+        text: '🚀 Just launched a new token! Check it out on DeckDev - the ultimate platform for token creation and management. #DeFi #Solana #TokenLaunch',
         profileImage: 'https://avatars.githubusercontent.com/u/1?v=4',
         followerCount: '12.3K',
         url: 'https://twitter.com/seven100x'
