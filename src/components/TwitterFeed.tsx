@@ -421,8 +421,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
               <div key={tweet.id} className="w-full max-w-full mx-auto rounded-none overflow-hidden shadow-lg transition-all duration-200 border-b border-b-[5px] border-gray-700/50">
                 <div className="relative flex flex-col w-full" style={{backgroundColor: 'rgb(30,30,30)'}}>
                   <div className="relative z-10">
-                    <div className="border-b border-gray-700/50 flex">
-                      <button className="flex items-center overflow-hidden cursor-pointer hover:bg-gray-600/30 transition-colors duration-200 flex-1 min-w-0 bg-transparent border-0 focus:outline-none text-left px-4 py-3" type="button">
+                    <div className="border-b border-gray-700/50 flex items-center justify-between px-4 py-3">
+                      <button className="flex items-center overflow-hidden cursor-pointer hover:bg-gray-600/30 transition-colors duration-200 flex-1 min-w-0 bg-transparent border-0 focus:outline-none text-left" type="button">
                         <img alt="." className="w-8 h-8 rounded-full object-cover border border-gray-700 flex-shrink-0 shadow-sm" loading="lazy" decoding="async" src={tweet.profileImage || 'https://pbs.twimg.com/profile_images/1922564280949317632/zbUSuaqn_normal.png'} />
                         <div className="flex flex-col ml-3 overflow-hidden min-w-0">
                           <div className="flex items-center gap-1">
@@ -443,14 +443,14 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                           </div>
                         </div>
                       </button>
-                      <button type="button" className="flex items-center justify-center gap-2 px-4 py-2 hover:bg-gray-600/30 transition-colors duration-200 min-w-0 flex-shrink-0 border-l border-gray-700/50" style={{flexBasis: '33.333%'}} onClick={handleDeployClick}>
-                        <div className="flex items-center gap-2 text-white text-sm font-medium">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layers w-4 h-4" aria-hidden="true">
+                      <button type="button" className="flex items-center justify-center gap-1.5 px-3 py-1.5 hover:bg-gray-600/30 transition-colors duration-200 rounded-lg border border-gray-600/50 bg-gray-700/30" onClick={handleDeployClick}>
+                        <div className="flex items-center gap-1.5 text-white text-xs font-medium">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layers" aria-hidden="true">
                             <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path>
                             <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path>
                             <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path>
                           </svg>
-                          <span className="text-sm">Deploy</span>
+                          <span className="text-xs">Deploy</span>
                         </div>
                       </button>
                     </div>
