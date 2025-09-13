@@ -229,6 +229,7 @@ app.post('/webhook', async (req, res) => {
 
     // INSTANTLY broadcast new tweet to all connected SSE clients - BEFORE response!
     if (global.sseConnections && global.sseConnections.length > 0) {
+      console.log(`📡 Broadcasting to ${global.sseConnections.length} SSE clients`);
       // Send IMMEDIATELY - no processing delays
       const sseMessage = `data: ${JSON.stringify({
         type: 'new_tweet',
@@ -242,11 +243,15 @@ app.post('/webhook', async (req, res) => {
           conn.write(sseMessage);
           // Force flush for instant delivery
           if (conn.flush) conn.flush();
+          console.log(`✅ Tweet sent to SSE client ${index}`);
         } catch (error) {
           // Remove dead connections silently for speed
+          console.log(`❌ Dead SSE connection ${index} removed`);
           global.sseConnections.splice(index, 1);
         }
       });
+    } else {
+      console.log('⚠️  No SSE connections to broadcast to');
     }
 
     // Log successful processing (minimal for performance)
@@ -383,6 +388,7 @@ app.get('/api/tweets-stream', (req, res) => {
   });
 
   // Send initial connection confirmation
+  console.log('🔗 New SSE client connected');
   res.write(`data: ${JSON.stringify({
     type: 'connected',
     message: 'SSE connection established',

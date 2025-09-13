@@ -75,6 +75,15 @@ class WebhookService {
       this.updateStatus('connected');
     };
 
+    // Debug: Log all events
+    eventSource.addEventListener('open', () => {
+      console.log('🔗 SSE connection established');
+    });
+
+    eventSource.addEventListener('error', (e) => {
+      console.error('❌ SSE connection error:', e);
+    });
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -90,8 +99,8 @@ class WebhookService {
           }
         } else if (data.type === 'new_tweet') {
           console.log('⚡ INSTANT new tweet received via SSE:', data.tweet.username);
-          // INSTANT processing - no delays
-          this.callbacks.onNewTweet(data.tweet);
+          // Process and display tweet instantly
+          this.processTweet(data.tweet);
         }
       } catch (error) {
         console.error('SSE message parsing error:', error);
