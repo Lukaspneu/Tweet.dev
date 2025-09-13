@@ -395,7 +395,10 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                       )}
                       
                       {/* Image Media */}
-                      {tweet.imageUrl && !tweet.videoUrl && (
+                      {tweet.imageUrl && !tweet.videoUrl && (() => {
+                        console.log('Displaying image:', tweet.imageUrl, 'for tweet:', tweet.text);
+                        return true;
+                      })() && (
                         <div className="px-0 pt-2">
                           <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full overflow-hidden">
                             <div className="relative group w-full h-full flex items-center justify-center">
@@ -408,8 +411,13 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                                 src={tweet.imageUrl}
                                 loading="lazy"
                                 onError={(e) => {
+                                  console.error('Image failed to load:', tweet.imageUrl);
                                   const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
+                                  target.style.border = '2px solid red';
+                                  target.alt = 'Image failed to load';
+                                }}
+                                onLoad={() => {
+                                  console.log('Image loaded successfully:', tweet.imageUrl);
                                 }}
                               />
                               <button type="button" className="absolute top-2 right-2 bg-black/60 rounded-full p-1 transition-opacity duration-200 opacity-70 hover:opacity-100" aria-label="Expand image">
