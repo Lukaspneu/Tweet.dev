@@ -91,7 +91,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     })
     
     setWebhookService(service)
-    service.connect()
+    service.startPolling()
 
     return () => {
       // Cleanup will be handled by the service
@@ -412,8 +412,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                               }}
                             />
                           </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
                       <button type="button" className="flex items-center justify-center h-full w-10 border-r border-gray-700/50 transition-colors duration-200 text-gray-500 hover:text-red-400 hover:bg-red-500/10" title={`Remove @${tweet.username} from feed`}>
