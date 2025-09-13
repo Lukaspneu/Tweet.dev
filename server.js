@@ -74,6 +74,7 @@ app.post('/webhook', async (req, res) => {
     // Debug logging to see what's being received
     console.log('🔍 Full webhook data received:', JSON.stringify(webhookData, null, 2));
     console.log('🔍 Data structure keys:', Object.keys(webhookData));
+    console.log('🔍 Video URL detected:', webhookData.videoUrl);
     
     // Generate unique ID if not provided
     const webhookId = webhookData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
