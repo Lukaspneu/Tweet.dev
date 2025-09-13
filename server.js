@@ -88,20 +88,21 @@ app.post('/webhook', async (req, res) => {
     };
 
     // Store tweet for real-time display (if it's a tweet or FeedPost)
-    if (webhookData.tweet_id || webhookData.feed_id || webhookData.tweet_content || webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content || webhookData.data?.text) {
+    if (webhookData.tweet_id || webhookData.feed_id || webhookData.tweet_content || webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content || webhookData.data?.text || webhookData.extension?.tweet_id || webhookData.extension?.tweet_content) {
       
       // Handle PostInfo/FeedPost structure
       let tweetData;
       
-      if (webhookData.tweet_id || webhookData.feed_id) {
-        // New PostInfo/FeedPost structure
-        const tweetId = webhookData.tweet_id;
-        const username = webhookData.twitter_user_handle || 'unknown';
+      if (webhookData.tweet_id || webhookData.feed_id || webhookData.extension?.tweet_id) {
+        // New PostInfo/FeedPost structure (including extension field)
+        const extension = webhookData.extension || {};
+        const tweetId = webhookData.tweet_id || extension.tweet_id;
+        const username = webhookData.twitter_user_handle || extension.twitter_user_handle || 'unknown';
         const displayName = username; // Use handle as display name if no separate display name
-        const profileImage = webhookData.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        let content = webhookData.tweet_content || 'No content';
-        const published = webhookData.published || new Date().toISOString();
-        const received = webhookData.received || new Date().toISOString();
+        const profileImage = webhookData.twitter_user_avatar || extension.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        let content = webhookData.tweet_content || extension.tweet_content || 'No content';
+        const published = webhookData.published || extension.published || new Date().toISOString();
+        const received = webhookData.received || extension.received || new Date().toISOString();
         
         // Clean the content - remove "Posted", "Quoted" and URLs
         content = content
@@ -164,9 +165,9 @@ app.post('/webhook', async (req, res) => {
           .trim();
         
         const author = webhookData.author || webhookData.data?.author || {};
-        const username = webhookData.username || author.username || webhookData.data?.username || 'unknown';
+        const username = webhookData.username || author.username || webhookData.data?.username || webhookData.twitter_user_handle || 'unknown';
         const displayName = webhookData.displayName || author.displayName || webhookData.data?.displayName || username || 'Unknown User';
-        const profileImage = webhookData.profileImage || author.profileImage || webhookData.data?.profileImage || 
+        const profileImage = webhookData.profileImage || author.profileImage || webhookData.data?.profileImage || webhookData.twitter_user_avatar || 
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
         const followerCount = webhookData.followerCount || author.followerCount || webhookData.data?.followerCount || '1K';
         const tweetUrl = extractedUrl || webhookData.url || webhookData.tweetUrl || webhookData.link || webhookData.data?.url;

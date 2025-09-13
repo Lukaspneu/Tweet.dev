@@ -109,12 +109,13 @@ class WebhookService {
       // Handle both PostInfo/FeedPost structure and legacy structure
       let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, timestamp;
       
-      if (tweetData.tweet_id || tweetData.feed_id) {
-        // New PostInfo/FeedPost structure
-        username = tweetData.username || 'unknown';
+      if (tweetData.tweet_id || tweetData.feed_id || tweetData.extension?.tweet_id) {
+        // New PostInfo/FeedPost structure (including extension field)
+        const extension = tweetData.extension || {};
+        username = tweetData.username || extension.twitter_user_handle || 'unknown';
         displayName = username; // Use handle as display name
-        profileImage = tweetData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        let rawText = tweetData.text || 'No content';
+        profileImage = tweetData.profileImage || extension.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        let rawText = tweetData.text || extension.tweet_content || 'No content';
         
         // Clean the content - remove "Posted", "Quoted" and URLs
         cleanText = rawText
@@ -162,9 +163,9 @@ class WebhookService {
           .trim();
         
         const author = tweetData.author || {};
-        username = tweetData.username || author.username || 'unknown';
+        username = tweetData.username || author.username || tweetData.twitter_user_handle || 'unknown';
         displayName = tweetData.displayName || author.displayName || username || 'Unknown User';
-        profileImage = tweetData.profileImage || author.profileImage || 
+        profileImage = tweetData.profileImage || author.profileImage || tweetData.twitter_user_avatar || 
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
         followerCount = tweetData.followerCount || author.followerCount || '1K';
         tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
