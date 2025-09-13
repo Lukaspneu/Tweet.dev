@@ -113,14 +113,18 @@ class WebhookService {
         // New PostInfo/FeedPost structure (including extension field)
         const extension = tweetData.extension || {};
         username = tweetData.username || extension.twitter_user_handle || 'unknown';
-        displayName = username; // Use handle as display name
+        displayName = tweetData.displayName || extension.twitter_user_display_name || username;
         profileImage = tweetData.profileImage || extension.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        followerCount = tweetData.followerCount || extension.twitter_user_followers || '1K';
         let rawText = tweetData.text || extension.tweet_content || 'No content';
         
         // Clean the content - remove "Posted", "Quoted" and URLs
         cleanText = rawText
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
+          .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
@@ -159,6 +163,9 @@ class WebhookService {
           .replace(/\[↧\]/g, '') // Remove [↧] symbols
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
+          .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         

@@ -102,8 +102,9 @@ app.post('/webhook', async (req, res) => {
         const extension = webhookData.extension || {};
         const tweetId = webhookData.tweet_id || extension.tweet_id;
         const username = webhookData.twitter_user_handle || extension.twitter_user_handle || 'unknown';
-        const displayName = username; // Use handle as display name if no separate display name
+        const displayName = webhookData.twitter_user_display_name || extension.twitter_user_display_name || webhookData.displayName || extension.displayName || username;
         const profileImage = webhookData.twitter_user_avatar || extension.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        const followerCount = webhookData.twitter_user_followers || extension.twitter_user_followers || webhookData.followerCount || extension.followerCount || '1K';
         let content = webhookData.tweet_content || extension.tweet_content || 'No content';
         const published = webhookData.published || extension.published || new Date().toISOString();
         const received = webhookData.received || extension.received || new Date().toISOString();
@@ -112,6 +113,9 @@ app.post('/webhook', async (req, res) => {
         content = content
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
+          .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
@@ -131,7 +135,7 @@ app.post('/webhook', async (req, res) => {
           timestamp: published,
           profileImage: profileImage,
           url: tweetUrl,
-          followerCount: '1K', // Default since not in PostInfo structure
+          followerCount: followerCount,
           source: 'webhook',
           receivedAt: new Date(received).getTime(),
           tweetId: tweetId,
@@ -165,6 +169,9 @@ app.post('/webhook', async (req, res) => {
           .replace(/\[↧\]/g, '') // Remove [↧] symbols
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
+          .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
