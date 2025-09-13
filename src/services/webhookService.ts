@@ -296,6 +296,22 @@ class WebhookService {
               }
             }
           }
+
+          // SPECIFIC TWITTER MEDIA URL PATTERN: Look for the exact format you showed
+          if (!imageUrl) {
+            const twitterMediaPattern = /https?:\/\/pbs\.twimg\.com\/media\/[A-Za-z0-9]+(\?format=(jpg|jpeg|png|gif|webp)&name=(large|medium|small))?/gi;
+            const mediaMatches = rawText.match(twitterMediaPattern);
+            if (mediaMatches) {
+              // Use the first match and ensure it has the proper format
+              let foundUrl = mediaMatches[0];
+              // If it doesn't have format parameters, add them for best quality
+              if (!foundUrl.includes('format=')) {
+                foundUrl = foundUrl.split('?')[0] + '?format=jpg&name=large';
+              }
+              imageUrl = foundUrl;
+              console.log('🖼️ Twitter media URL found with exact pattern (PostInfo):', imageUrl);
+            }
+          }
         }
 
         // DEBUG: Log image extraction for PostInfo/FeedPost structure
@@ -453,6 +469,22 @@ class WebhookService {
               }
             }
           }
+
+          // SPECIFIC TWITTER MEDIA URL PATTERN: Look for the exact format you showed
+          if (!imageUrl) {
+            const twitterMediaPattern = /https?:\/\/pbs\.twimg\.com\/media\/[A-Za-z0-9]+(\?format=(jpg|jpeg|png|gif|webp)&name=(large|medium|small))?/gi;
+            const mediaMatches = rawText.match(twitterMediaPattern);
+            if (mediaMatches) {
+              // Use the first match and ensure it has the proper format
+              let foundUrl = mediaMatches[0];
+              // If it doesn't have format parameters, add them for best quality
+              if (!foundUrl.includes('format=')) {
+                foundUrl = foundUrl.split('?')[0] + '?format=jpg&name=large';
+              }
+              imageUrl = foundUrl;
+              console.log('🖼️ Twitter media URL found with exact pattern:', imageUrl);
+            }
+          }
           
           // Search for any URL that might be an image (excluding profile pics)
           if (!imageUrl) {
@@ -498,8 +530,13 @@ class WebhookService {
                 const value = obj[key];
                 const currentPath = path ? `${path}.${key}` : key;
                 
-                if (typeof value === 'string' && value.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i)) {
+                if (typeof value === 'string' && (value.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i) || value.includes('pbs.twimg.com/media'))) {
                   console.log(`🖼️ Found image URL in ${currentPath}:`, value);
+                  // If it's a Twitter media URL without format parameters, suggest the full URL
+                  if (value.includes('pbs.twimg.com/media') && !value.includes('format=')) {
+                    const baseUrl = value.split('?')[0];
+                    console.log(`💡 Suggested full Twitter media URL: ${baseUrl}?format=jpg&name=large`);
+                  }
                 } else if (typeof value === 'object' && value !== null) {
                   deepSearch(value, currentPath);
                 }
