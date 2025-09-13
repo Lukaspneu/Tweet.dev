@@ -364,11 +364,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                       <div className="text-gray-100 text-sm leading-relaxed max-h-fit overflow-hidden">
                         <div className="text-left">
                           <span>{tweet.text}</span>
-                          {tweet.url && (
-                            <a href={tweet.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline ml-1">
-                              {tweet.url}
-                            </a>
-                          )}
                         </div>
                       </div>
                       {tweet.imageUrl && (
