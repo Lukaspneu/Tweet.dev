@@ -391,44 +391,26 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                               </button>
                             </div>
                           </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
                       
-                      {/* Image Media */}
-                      {tweet.imageUrl && !tweet.videoUrl && (() => {
-                        console.log('Displaying image:', tweet.imageUrl, 'for tweet:', tweet.text);
-                        return true;
-                      })() && (
+                      {/* Image Media - Simplified */}
+                      {tweet.imageUrl && !tweet.videoUrl && (
                         <div className="px-0 pt-2">
-                          <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full overflow-hidden">
-                            <div className="relative group w-full h-full flex items-center justify-center">
-                              <img 
-                                alt="" 
-                                className="object-contain max-w-full max-h-[400px] w-full cursor-pointer transition-all duration-200 rounded-lg" 
-                                style={{ maxHeight: '400px' }}
-                                tabIndex={0} 
-                                draggable={true} 
-                                src={tweet.imageUrl}
-                                loading="lazy"
-                                onError={(e) => {
-                                  console.error('Image failed to load:', tweet.imageUrl);
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.border = '2px solid red';
-                                  target.alt = 'Image failed to load';
-                                }}
-                                onLoad={() => {
-                                  console.log('Image loaded successfully:', tweet.imageUrl);
-                                }}
-                              />
-                              <button type="button" className="absolute top-2 right-2 bg-black/60 rounded-full p-1 transition-opacity duration-200 opacity-70 hover:opacity-100" aria-label="Expand image">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize w-6 h-6 text-white drop-shadow p-1" aria-hidden="true">
-                                  <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-                                  <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
-                                  <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
-                                  <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-                                </svg>
-                              </button>
-                            </div>
+                          <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
+                            <img 
+                              alt="Tweet image" 
+                              className="w-full max-h-[400px] object-contain rounded-lg" 
+                              src={tweet.imageUrl}
+                              onError={(e) => {
+                                console.error('Image failed to load:', tweet.imageUrl);
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('Image loaded successfully:', tweet.imageUrl);
+                              }}
+                            />
                           </div>
                         </div>
                       )}
