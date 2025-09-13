@@ -88,17 +88,28 @@ app.post('/webhook', async (req, res) => {
     };
 
     // Store tweet for real-time display (if it's a tweet)
-    if (webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content) {
+    if (webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content || webhookData.data?.text) {
+      // Extract tweet data with better parsing
+      const tweetText = webhookData.text || webhookData.content || webhookData.message || webhookData.data?.text || 'No content';
+      const author = webhookData.author || webhookData.data?.author || {};
+      const username = webhookData.username || author.username || webhookData.data?.username || 'unknown';
+      const displayName = webhookData.displayName || author.displayName || webhookData.data?.displayName || username || 'Unknown User';
+      const profileImage = webhookData.profileImage || author.profileImage || webhookData.data?.profileImage || 
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+      const followerCount = webhookData.followerCount || author.followerCount || webhookData.data?.followerCount || '1K';
+      const tweetUrl = webhookData.url || webhookData.tweetUrl || webhookData.link || webhookData.data?.url;
+      const imageUrl = webhookData.imageUrl || webhookData.media?.image || webhookData.attachments?.image || webhookData.data?.imageUrl;
+      
       const tweetData = {
         id: webhookId,
-        username: webhookData.username || webhookData.author?.username || 'unknown',
-        displayName: webhookData.displayName || webhookData.author?.displayName || webhookData.username || 'Unknown User',
-        text: webhookData.text || webhookData.content || webhookData.message || 'No content',
+        username: username,
+        displayName: displayName,
+        text: tweetText,
         timestamp: new Date().toISOString(),
-        profileImage: webhookData.profileImage || webhookData.author?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(webhookData.username || 'User')}&background=1f2937&color=fff`,
-        url: webhookData.url || webhookData.tweetUrl || webhookData.link,
-        imageUrl: webhookData.imageUrl || webhookData.media?.image || webhookData.attachments?.image,
-        followerCount: webhookData.followerCount || webhookData.author?.followerCount || '1K',
+        profileImage: profileImage,
+        url: tweetUrl,
+        imageUrl: imageUrl,
+        followerCount: followerCount,
         source: 'webhook',
         receivedAt: Date.now()
       };

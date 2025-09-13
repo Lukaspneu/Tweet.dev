@@ -106,17 +106,28 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
+      // Better data extraction with multiple fallbacks
+      const tweetText = tweetData.text || tweetData.content || tweetData.message || 'No content';
+      const author = tweetData.author || {};
+      const username = tweetData.username || author.username || 'unknown';
+      const displayName = tweetData.displayName || author.displayName || username || 'Unknown User';
+      const profileImage = tweetData.profileImage || author.profileImage || 
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+      const followerCount = tweetData.followerCount || author.followerCount || '1K';
+      const tweetUrl = tweetData.url || tweetData.tweetUrl || tweetData.link;
+      const imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
+      
       // Transform webhook data to our tweet format
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        username: tweetData.username || tweetData.author?.username || 'unknown',
-        displayName: tweetData.displayName || tweetData.author?.displayName || tweetData.username || 'Unknown User',
-        text: tweetData.text || tweetData.content || tweetData.message || 'No content',
+        username: username,
+        displayName: displayName,
+        text: tweetText,
         timestamp: tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now(),
-        profileImage: tweetData.profileImage || tweetData.author?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(tweetData.username || 'User')}&background=1f2937&color=fff`,
-        url: tweetData.url || tweetData.tweetUrl || tweetData.link,
-        imageUrl: tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image,
-        followerCount: tweetData.followerCount || tweetData.author?.followerCount || '1K',
+        profileImage: profileImage,
+        url: tweetUrl,
+        imageUrl: imageUrl,
+        followerCount: followerCount,
         source: 'webhook'
       }
 
