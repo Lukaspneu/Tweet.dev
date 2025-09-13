@@ -310,6 +310,33 @@ class WebhookService {
         } else {
           console.log('❌ No image found in legacy structure. Available fields:', Object.keys(tweetData));
           console.log('📝 Raw text content:', rawText);
+          console.log('🔍 Field values:', {
+            imageUrl: tweetData.imageUrl,
+            videoUrl: tweetData.videoUrl,
+            videoPoster: tweetData.videoPoster,
+            media: tweetData.media,
+            attachments: tweetData.attachments,
+            entities: tweetData.entities
+          });
+          
+          // Deep search for any image URLs in the entire object
+          const deepSearch = (obj: any, path = ''): void => {
+            if (typeof obj === 'object' && obj !== null) {
+              Object.keys(obj).forEach(key => {
+                const value = obj[key];
+                const currentPath = path ? `${path}.${key}` : key;
+                
+                if (typeof value === 'string' && value.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i)) {
+                  console.log(`🖼️ Found image URL in ${currentPath}:`, value);
+                } else if (typeof value === 'object' && value !== null) {
+                  deepSearch(value, currentPath);
+                }
+              });
+            }
+          };
+          
+          console.log('🔍 Deep searching for image URLs...');
+          deepSearch(tweetData);
         }
       }
       
