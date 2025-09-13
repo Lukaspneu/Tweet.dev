@@ -1,0 +1,46 @@
+# Render Production Configuration for 24/7 Webhook Performance
+services:
+  - type: web
+    name: deckdev-app
+    env: node
+    plan: starter  # Always-on, no sleeping
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    region: oregon  # Fastest global performance
+    autoDeploy: true
+    branch: main
+    rootDir: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: RENDER
+        value: true
+      - key: ALWAYS_ON
+        value: true
+    # Performance optimizations
+    buildPlan: starter
+    cache:
+      profile: no-cache
+    numInstances: 1
+    openPorts:
+      - port: 3000
+        protocol: TCP
+    # Health check configuration
+    healthCheckPath: /health
+    healthCheckGracePeriod: 300
+    # Keep-alive configuration
+    preDeployCommand: echo "Starting production deployment..."
+    postDeployCommand: echo "Production deployment completed successfully!"
+
+# Environment-specific settings
+environments:
+  production:
+    NODE_ENV: production
+    PORT: 3000
+    RENDER: true
+    ALWAYS_ON: true
+    WEBHOOK_VERSION: "2.0.0"
+    SERVER_TYPE: "render-production"
