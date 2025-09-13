@@ -91,7 +91,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     })
     
     setWebhookService(service)
-    service.startPolling()
+    service.connect()
 
     return () => {
       // Cleanup will be handled by the service

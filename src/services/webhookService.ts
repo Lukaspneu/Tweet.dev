@@ -32,8 +32,8 @@ class WebhookService {
     this.callbacks = callbacks
   }
 
-  // Start polling for new tweets from webhook endpoint
-  async startPolling() {
+  // Start INSTANT real-time SSE connection for tweets
+  async connect() {
     if (this.isConnecting) return
     
     this.isConnecting = true
@@ -50,7 +50,7 @@ class WebhookService {
       this.reconnectAttempts = 0
       
     } catch (error) {
-      console.error('Failed to start webhook polling:', error)
+      console.error('Failed to start SSE connection:', error)
       this.updateStatus('error')
       this.callbacks.onError(`Connection failed: ${error}`)
       this.scheduleReconnect()
@@ -291,7 +291,7 @@ class WebhookService {
   // Manual reconnect
   reconnect() {
     this.reconnectAttempts = 0
-    this.startPolling()
+        this.connect()
   }
 }
 
