@@ -107,14 +107,37 @@ class WebhookService {
   private processTweet(tweetData: any) {
     try {
       // Better data extraction with multiple fallbacks
-      const tweetText = tweetData.text || tweetData.content || tweetData.message || 'No content';
+      let rawText = tweetData.text || tweetData.content || tweetData.message || 'No content';
+      
+      // Clean markdown links and extract clean text
+      let cleanText = rawText;
+      let extractedUrl = null;
+      
+      // Handle markdown links like [text](url)
+      const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+      const linkMatches = [...rawText.matchAll(markdownLinkRegex)];
+      
+      if (linkMatches.length > 0) {
+        // Extract the link text (first capture group)
+        cleanText = linkMatches.map(match => match[1]).join(' ').trim();
+        // Extract the URL (second capture group) - use the first one found
+        extractedUrl = linkMatches[0][2];
+      }
+      
+      // Clean up any remaining markdown or unwanted characters
+      cleanText = cleanText
+        .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
+        .replace(/\[Posted\]/g, '') // Remove [Posted] text
+        .replace(/\[↧\]/g, '') // Remove [↧] symbols
+        .trim();
+      
       const author = tweetData.author || {};
       const username = tweetData.username || author.username || 'unknown';
       const displayName = tweetData.displayName || author.displayName || username || 'Unknown User';
       const profileImage = tweetData.profileImage || author.profileImage || 
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
       const followerCount = tweetData.followerCount || author.followerCount || '1K';
-      const tweetUrl = tweetData.url || tweetData.tweetUrl || tweetData.link;
+      const tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
       const imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
       
       // Transform webhook data to our tweet format
@@ -122,7 +145,7 @@ class WebhookService {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         username: username,
         displayName: displayName,
-        text: tweetText,
+        text: cleanText,
         timestamp: tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now(),
         profileImage: profileImage,
         url: tweetUrl,

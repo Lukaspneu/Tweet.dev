@@ -90,21 +90,44 @@ app.post('/webhook', async (req, res) => {
     // Store tweet for real-time display (if it's a tweet)
     if (webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content || webhookData.data?.text) {
       // Extract tweet data with better parsing
-      const tweetText = webhookData.text || webhookData.content || webhookData.message || webhookData.data?.text || 'No content';
+      let rawText = webhookData.text || webhookData.content || webhookData.message || webhookData.data?.text || 'No content';
+      
+      // Clean markdown links and extract clean text
+      let cleanText = rawText;
+      let extractedUrl = null;
+      
+      // Handle markdown links like [text](url)
+      const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+      const linkMatches = [...rawText.matchAll(markdownLinkRegex)];
+      
+      if (linkMatches.length > 0) {
+        // Extract the link text (first capture group)
+        cleanText = linkMatches.map(match => match[1]).join(' ').trim();
+        // Extract the URL (second capture group) - use the first one found
+        extractedUrl = linkMatches[0][2];
+      }
+      
+      // Clean up any remaining markdown or unwanted characters
+      cleanText = cleanText
+        .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
+        .replace(/\[Posted\]/g, '') // Remove [Posted] text
+        .replace(/\[↧\]/g, '') // Remove [↧] symbols
+        .trim();
+      
       const author = webhookData.author || webhookData.data?.author || {};
       const username = webhookData.username || author.username || webhookData.data?.username || 'unknown';
       const displayName = webhookData.displayName || author.displayName || webhookData.data?.displayName || username || 'Unknown User';
       const profileImage = webhookData.profileImage || author.profileImage || webhookData.data?.profileImage || 
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
       const followerCount = webhookData.followerCount || author.followerCount || webhookData.data?.followerCount || '1K';
-      const tweetUrl = webhookData.url || webhookData.tweetUrl || webhookData.link || webhookData.data?.url;
+      const tweetUrl = extractedUrl || webhookData.url || webhookData.tweetUrl || webhookData.link || webhookData.data?.url;
       const imageUrl = webhookData.imageUrl || webhookData.media?.image || webhookData.attachments?.image || webhookData.data?.imageUrl;
       
       const tweetData = {
         id: webhookId,
         username: username,
         displayName: displayName,
-        text: tweetText,
+        text: cleanText,
         timestamp: new Date().toISOString(),
         profileImage: profileImage,
         url: tweetUrl,
