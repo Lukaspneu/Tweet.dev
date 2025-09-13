@@ -1,108 +1,186 @@
 #!/usr/bin/env node
 
-/**
- * Test script for DeckDev webhook endpoint
- * Usage: node test-webhook.js [webhook-url]
- */
-
 import fetch from 'node-fetch';
 
-const WEBHOOK_URL = process.argv[2] || 'http://localhost:3000/webhook';
+// Webhook testing script
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'http://localhost:3000/webhook';
 
-// Test data examples
+// Test payloads
 const testPayloads = [
   {
-    id: 'test-001',
-    type: 'tweet',
-    data: {
-      username: 'testuser',
-      message: 'Hello from webhook test!',
-      timestamp: new Date().toISOString()
+    name: 'Basic webhook',
+    payload: {
+      id: 'test_001',
+      type: 'user_signup',
+      data: {
+        userId: '12345',
+        email: 'test@example.com',
+        timestamp: new Date().toISOString()
+      }
     }
   },
   {
-    id: 'test-002',
-    type: 'notification',
-    data: {
-      title: 'New follower',
-      user: 'john_doe',
-      message: 'started following you'
+    name: 'Payment webhook',
+    payload: {
+      id: 'pay_002',
+      type: 'payment_completed',
+      event: 'payment_success',
+      data: {
+        transactionId: 'txn_abc123',
+        amount: 29.99,
+        currency: 'USD',
+        customer: {
+          id: 'cust_456',
+          email: 'customer@example.com'
+        }
+      }
     }
   },
   {
-    id: 'test-003',
-    type: 'payment',
-    data: {
-      amount: 100,
-      currency: 'USD',
-      from: 'user123',
-      to: 'user456',
-      description: 'Token purchase'
+    name: 'Minimal webhook',
+    payload: {
+      message: 'Hello webhook!',
+      timestamp: Date.now()
     }
   }
 ];
 
-async function testWebhook(payload) {
+// Test functions
+async function testWebhook(payload, name) {
   try {
-    console.log(`\n🧪 Testing webhook with payload:`, JSON.stringify(payload, null, 2));
+    console.log(`\n🧪 Testing: ${name}`);
+    console.log('📤 Payload:', JSON.stringify(payload, null, 2));
+    
+    const startTime = Date.now();
     
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'DeckDev-Webhook-Test/1.0'
+        'User-Agent': 'Webhook-Tester/1.0'
       },
       body: JSON.stringify(payload)
     });
-
+    
+    const responseTime = Date.now() - startTime;
     const responseData = await response.json();
     
+    console.log(`📥 Response (${response.status}):`, JSON.stringify(responseData, null, 2));
+    console.log(`⏱️  Response time: ${responseTime}ms`);
+    
     if (response.ok) {
-      console.log('✅ Success:', response.status);
-      console.log('📄 Response:', JSON.stringify(responseData, null, 2));
+      console.log('✅ Test passed');
     } else {
-      console.log('❌ Error:', response.status);
-      console.log('📄 Response:', JSON.stringify(responseData, null, 2));
+      console.log('❌ Test failed');
     }
     
+    return { success: response.ok, responseTime, status: response.status };
+    
   } catch (error) {
-    console.error('💥 Network Error:', error.message);
+    console.log(`❌ Test error: ${error.message}`);
+    return { success: false, error: error.message };
   }
 }
 
-async function testHealthCheck() {
+async function testInvalidPayload() {
   try {
-    console.log('\n🏥 Testing health check endpoint...');
-    const healthUrl = WEBHOOK_URL.replace('/webhook', '/health');
-    const response = await fetch(healthUrl);
-    const data = await response.json();
+    console.log('\n🧪 Testing: Invalid JSON payload');
+    
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: 'invalid json'
+    });
+    
+    const responseData = await response.json();
+    console.log(`📥 Response (${response.status}):`, JSON.stringify(responseData, null, 2));
+    
+    if (response.status === 400) {
+      console.log('✅ Invalid payload test passed');
+      return true;
+    } else {
+      console.log('❌ Invalid payload test failed');
+      return false;
+    }
+    
+  } catch (error) {
+    console.log(`❌ Invalid payload test error: ${error.message}`);
+    return false;
+  }
+}
+
+async function testHealthEndpoint() {
+  try {
+    console.log('\n🧪 Testing: Health endpoint');
+    
+    const response = await fetch(WEBHOOK_URL.replace('/webhook', '/health'));
+    const responseData = await response.json();
+    
+    console.log(`📥 Health Response (${response.status}):`, JSON.stringify(responseData, null, 2));
     
     if (response.ok) {
-      console.log('✅ Health check passed:', JSON.stringify(data, null, 2));
+      console.log('✅ Health check passed');
+      return true;
     } else {
-      console.log('❌ Health check failed:', response.status);
+      console.log('❌ Health check failed');
+      return false;
     }
+    
   } catch (error) {
-    console.error('💥 Health check error:', error.message);
+    console.log(`❌ Health check error: ${error.message}`);
+    return false;
   }
 }
 
+// Main test runner
 async function runTests() {
-  console.log('🚀 DeckDev Webhook Test Suite');
-  console.log('📍 Webhook URL:', WEBHOOK_URL);
+  console.log('🚀 Starting Webhook Tests');
+  console.log(`🎯 Target URL: ${WEBHOOK_URL}`);
   
-  // Test health check first
-  await testHealthCheck();
+  const results = [];
   
-  // Test each payload
-  for (const payload of testPayloads) {
-    await testWebhook(payload);
-    // Wait 1 second between tests
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Test valid payloads
+  for (const test of testPayloads) {
+    const result = await testWebhook(test.payload, test.name);
+    results.push({ name: test.name, ...result });
+    
+    // Wait between tests
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
   
-  console.log('\n✨ All tests completed!');
+  // Test invalid payload
+  const invalidResult = await testInvalidPayload();
+  results.push({ name: 'Invalid payload', success: invalidResult });
+  
+  // Test health endpoint
+  const healthResult = await testHealthEndpoint();
+  results.push({ name: 'Health check', success: healthResult });
+  
+  // Summary
+  console.log('\n📊 Test Summary:');
+  const passed = results.filter(r => r.success).length;
+  const total = results.length;
+  
+  results.forEach(result => {
+    const status = result.success ? '✅' : '❌';
+    const time = result.responseTime ? ` (${result.responseTime}ms)` : '';
+    console.log(`${status} ${result.name}${time}`);
+  });
+  
+  console.log(`\n🎯 Results: ${passed}/${total} tests passed`);
+  
+  if (passed === total) {
+    console.log('🎉 All tests passed! Your webhook is ready for production.');
+  } else {
+    console.log('⚠️  Some tests failed. Please check the webhook implementation.');
+  }
 }
 
-// Run the tests
-runTests().catch(console.error);
+// Run tests if this script is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runTests().catch(console.error);
+}
+
+export { runTests, testWebhook, testInvalidPayload, testHealthEndpoint };
