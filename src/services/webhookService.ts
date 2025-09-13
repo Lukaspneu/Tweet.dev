@@ -248,7 +248,6 @@ class WebhookService {
           if (!imageUrl && tweetUrl) {
             const tweetIdMatch = tweetUrl.match(/twitter\.com\/\w+\/status\/(\d+)/) || tweetUrl.match(/x\.com\/\w+\/status\/(\d+)/);
             if (tweetIdMatch) {
-              const tweetId = tweetIdMatch[1];
               // Use Twitter's oEmbed API to get tweet data with media
               fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(tweetUrl)}&omit_script=true`)
                 .then(response => response.json())
