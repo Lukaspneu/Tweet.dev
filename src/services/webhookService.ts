@@ -196,33 +196,49 @@ class WebhookService {
         
         timestamp = tweetData.receivedAt || Date.now();
         
-        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs
+        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs (excluding profile pics)
         if (!imageUrl) {
           // Search in raw text
           if (rawText) {
             const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
             if (imageUrlMatch) {
-              imageUrl = imageUrlMatch[0];
-              console.log('🖼️ Image extracted from raw text (PostInfo):', imageUrl);
+              const foundUrl = imageUrlMatch[0];
+              // Filter out profile pictures - only use if it's NOT a profile image
+              if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar')) {
+                imageUrl = foundUrl;
+                console.log('🖼️ Image extracted from raw text (PostInfo):', imageUrl);
+              }
             }
           }
           
           // Search in the entire tweetData object as JSON string
           if (!imageUrl) {
             const jsonString = JSON.stringify(tweetData);
-            const imageUrlMatch = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
-            if (imageUrlMatch) {
-              imageUrl = imageUrlMatch[0];
-              console.log('🖼️ Image extracted from JSON string (PostInfo):', imageUrl);
+            const imageUrlMatches = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/gi);
+            if (imageUrlMatches) {
+              for (const foundUrl of imageUrlMatches) {
+                // Filter out profile pictures - only use if it's NOT a profile image
+                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar') && !foundUrl.includes('ui-avatars.com')) {
+                  imageUrl = foundUrl;
+                  console.log('🖼️ Image extracted from JSON string (PostInfo):', imageUrl);
+                  break;
+                }
+              }
             }
           }
           
-          // Search for pbs.twimg.com URLs (Twitter's image CDN)
+          // Search for pbs.twimg.com URLs (Twitter's image CDN) - exclude profile images
           if (!imageUrl) {
-            const twitterImageMatch = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/i);
-            if (twitterImageMatch) {
-              imageUrl = twitterImageMatch[0];
-              console.log('🖼️ Twitter CDN image found (PostInfo):', imageUrl);
+            const twitterImageMatches = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/gi);
+            if (twitterImageMatches) {
+              for (const foundUrl of twitterImageMatches) {
+                // Filter out profile pictures - only use media images
+                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && foundUrl.includes('media')) {
+                  imageUrl = foundUrl;
+                  console.log('🖼️ Twitter CDN media image found (PostInfo):', imageUrl);
+                  break;
+                }
+              }
             }
           }
         }
@@ -337,47 +353,67 @@ class WebhookService {
                      tweetData.media_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
         
-        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs
+        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs (excluding profile pics)
         if (!imageUrl) {
           // Search in raw text
           if (rawText) {
             const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
             if (imageUrlMatch) {
-              imageUrl = imageUrlMatch[0];
-              console.log('🖼️ Image extracted from raw text:', imageUrl);
+              const foundUrl = imageUrlMatch[0];
+              // Filter out profile pictures - only use if it's NOT a profile image
+              if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar')) {
+                imageUrl = foundUrl;
+                console.log('🖼️ Image extracted from raw text:', imageUrl);
+              }
             }
           }
           
           // Search in the entire tweetData object as JSON string
           if (!imageUrl) {
             const jsonString = JSON.stringify(tweetData);
-            const imageUrlMatch = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
-            if (imageUrlMatch) {
-              imageUrl = imageUrlMatch[0];
-              console.log('🖼️ Image extracted from JSON string:', imageUrl);
+            const imageUrlMatches = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/gi);
+            if (imageUrlMatches) {
+              for (const foundUrl of imageUrlMatches) {
+                // Filter out profile pictures - only use if it's NOT a profile image
+                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar') && !foundUrl.includes('ui-avatars.com')) {
+                  imageUrl = foundUrl;
+                  console.log('🖼️ Image extracted from JSON string:', imageUrl);
+                  break;
+                }
+              }
             }
           }
           
-          // Search for pbs.twimg.com URLs (Twitter's image CDN)
+          // Search for pbs.twimg.com URLs (Twitter's image CDN) - exclude profile images
           if (!imageUrl) {
-            const twitterImageMatch = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/i);
-            if (twitterImageMatch) {
-              imageUrl = twitterImageMatch[0];
-              console.log('🖼️ Twitter CDN image found:', imageUrl);
+            const twitterImageMatches = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/gi);
+            if (twitterImageMatches) {
+              for (const foundUrl of twitterImageMatches) {
+                // Filter out profile pictures - only use media images
+                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && foundUrl.includes('media')) {
+                  imageUrl = foundUrl;
+                  console.log('🖼️ Twitter CDN media image found:', imageUrl);
+                  break;
+                }
+              }
             }
           }
           
-          // Search for any URL that might be an image
+          // Search for any URL that might be an image (excluding profile pics)
           if (!imageUrl) {
             const anyUrlMatch = rawText.match(/https?:\/\/[^\s]+/g);
             if (anyUrlMatch) {
               for (const url of anyUrlMatch) {
-                if (url.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i) || 
+                if ((url.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i) || 
                     url.includes('pbs.twimg.com') || 
                     url.includes('media') || 
-                    url.includes('image')) {
+                    url.includes('image')) &&
+                    !url.includes('profile_images') && 
+                    !url.includes('_normal') && 
+                    !url.includes('avatar') &&
+                    !url.includes('ui-avatars.com')) {
                   imageUrl = url;
-                  console.log('🖼️ Potential image URL found:', imageUrl);
+                  console.log('🖼️ Potential image URL found (filtered):', imageUrl);
                   break;
                 }
               }
