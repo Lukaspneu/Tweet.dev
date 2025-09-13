@@ -149,10 +149,59 @@ class WebhookService {
         
         tweetUrl = tweetData.url || `https://twitter.com/${username}/status/${tweetData.tweetId}`;
         followerCount = '1K'; // Default since not in PostInfo structure
-        imageUrl = tweetData.imageUrl;
-        videoUrl = tweetData.videoUrl;
-        videoPoster = tweetData.videoPoster;
+        
+        // COMPREHENSIVE IMAGE EXTRACTION - Check ALL possible image fields
+        imageUrl = tweetData.imageUrl || 
+                  extension.imageUrl || 
+                  extension.tweet_image || 
+                  extension.media?.image || 
+                  extension.attachments?.image ||
+                  extension.entities?.media?.[0]?.media_url_https ||
+                  extension.entities?.media?.[0]?.media_url ||
+                  extension.media_url ||
+                  extension.media_url_https ||
+                  extension.image ||
+                  extension.photo ||
+                  extension.picture ||
+                  extension.thumbnail ||
+                  tweetData.media?.image ||
+                  tweetData.attachments?.image ||
+                  tweetData.entities?.media?.[0]?.media_url_https ||
+                  tweetData.entities?.media?.[0]?.media_url;
+        
+        // COMPREHENSIVE VIDEO EXTRACTION - Check ALL possible video fields
+        videoUrl = tweetData.videoUrl || 
+                  extension.videoUrl || 
+                  extension.tweet_video || 
+                  extension.media?.video ||
+                  extension.attachments?.video ||
+                  extension.entities?.media?.[0]?.video_info?.variants?.[0]?.url ||
+                  extension.video ||
+                  extension.mp4 ||
+                  extension.video_url ||
+                  tweetData.video ||
+                  tweetData.media?.video ||
+                  tweetData.attachments?.video;
+        
+        // COMPREHENSIVE VIDEO POSTER EXTRACTION - Check ALL possible poster fields
+        videoPoster = tweetData.videoPoster || 
+                     extension.videoPoster || 
+                     extension.video_thumbnail || 
+                     extension.media?.video_thumbnail ||
+                     extension.entities?.media?.[0]?.media_url_https ||
+                     extension.thumbnail ||
+                     extension.poster ||
+                     tweetData.video_thumbnail ||
+                     tweetData.media?.video_thumbnail;
+        
         timestamp = tweetData.receivedAt || Date.now();
+        
+        // DEBUG: Log image extraction for PostInfo/FeedPost structure
+        if (imageUrl) {
+          console.log('🖼️ Image found in PostInfo/FeedPost:', imageUrl);
+        } else {
+          console.log('❌ No image found in PostInfo/FeedPost structure. Available fields:', Object.keys(tweetData), Object.keys(extension));
+        }
       } else {
         // Legacy structure - extract tweet data with better parsing
         let rawText = tweetData.text || tweetData.content || tweetData.message || 'No content';
@@ -197,10 +246,51 @@ class WebhookService {
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
         followerCount = tweetData.followerCount || author.followerCount || '1K';
         tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
-        imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
-        videoUrl = tweetData.videoUrl || tweetData.video || tweetData.media?.video || tweetData.attachments?.video;
-        videoPoster = tweetData.videoPoster || tweetData.video_thumbnail || tweetData.media?.video_thumbnail;
+        // COMPREHENSIVE IMAGE EXTRACTION for legacy structure - Check ALL possible fields
+        imageUrl = tweetData.imageUrl || 
+                  tweetData.media?.image || 
+                  tweetData.attachments?.image ||
+                  tweetData.entities?.media?.[0]?.media_url_https ||
+                  tweetData.entities?.media?.[0]?.media_url ||
+                  tweetData.media_url ||
+                  tweetData.media_url_https ||
+                  tweetData.image ||
+                  tweetData.photo ||
+                  tweetData.picture ||
+                  tweetData.thumbnail ||
+                  tweetData.twitter_image ||
+                  tweetData.tweet_image ||
+                  tweetData.media_image;
+        
+        // COMPREHENSIVE VIDEO EXTRACTION for legacy structure - Check ALL possible fields
+        videoUrl = tweetData.videoUrl || 
+                  tweetData.video || 
+                  tweetData.media?.video || 
+                  tweetData.attachments?.video ||
+                  tweetData.entities?.media?.[0]?.video_info?.variants?.[0]?.url ||
+                  tweetData.mp4 ||
+                  tweetData.video_url ||
+                  tweetData.twitter_video ||
+                  tweetData.tweet_video ||
+                  tweetData.media_video;
+        
+        // COMPREHENSIVE VIDEO POSTER EXTRACTION for legacy structure - Check ALL possible fields
+        videoPoster = tweetData.videoPoster || 
+                     tweetData.video_thumbnail || 
+                     tweetData.media?.video_thumbnail ||
+                     tweetData.entities?.media?.[0]?.media_url_https ||
+                     tweetData.thumbnail ||
+                     tweetData.poster ||
+                     tweetData.video_poster ||
+                     tweetData.media_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
+        
+        // DEBUG: Log image extraction for legacy structure
+        if (imageUrl) {
+          console.log('🖼️ Image found in legacy structure:', imageUrl);
+        } else {
+          console.log('❌ No image found in legacy structure. Available fields:', Object.keys(tweetData));
+        }
       }
       
       // Transform webhook data to our tweet format
