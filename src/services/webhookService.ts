@@ -114,7 +114,20 @@ class WebhookService {
         username = tweetData.username || 'unknown';
         displayName = username; // Use handle as display name
         profileImage = tweetData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        cleanText = tweetData.text || 'No content';
+        let rawText = tweetData.text || 'No content';
+        
+        // Clean the content - remove "Posted", "Quoted" and URLs
+        cleanText = rawText
+          .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/\s+/g, ' ') // Clean up extra spaces
+          .trim();
+        
+        // If content is empty after cleaning, use a default message
+        if (!cleanText || cleanText === '') {
+          cleanText = 'Tweet content';
+        }
+        
         tweetUrl = tweetData.url || `https://twitter.com/${username}/status/${tweetData.tweetId}`;
         followerCount = '1K'; // Default since not in PostInfo structure
         imageUrl = tweetData.imageUrl;
@@ -143,6 +156,9 @@ class WebhookService {
           .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
           .replace(/\[Posted\]/g, '') // Remove [Posted] text
           .replace(/\[↧\]/g, '') // Remove [↧] symbols
+          .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
         const author = tweetData.author || {};

@@ -99,9 +99,21 @@ app.post('/webhook', async (req, res) => {
         const username = webhookData.twitter_user_handle || 'unknown';
         const displayName = username; // Use handle as display name if no separate display name
         const profileImage = webhookData.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        const content = webhookData.tweet_content || 'No content';
+        let content = webhookData.tweet_content || 'No content';
         const published = webhookData.published || new Date().toISOString();
         const received = webhookData.received || new Date().toISOString();
+        
+        // Clean the content - remove "Posted", "Quoted" and URLs
+        content = content
+          .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/\s+/g, ' ') // Clean up extra spaces
+          .trim();
+        
+        // If content is empty after cleaning, use a default message
+        if (!content || content === '') {
+          content = 'Tweet content';
+        }
         
         // Create tweet URL from tweet_id
         const tweetUrl = `https://twitter.com/${username}/status/${tweetId}`;
@@ -146,6 +158,9 @@ app.post('/webhook', async (req, res) => {
           .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
           .replace(/\[Posted\]/g, '') // Remove [Posted] text
           .replace(/\[↧\]/g, '') // Remove [↧] symbols
+          .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
         const author = webhookData.author || webhookData.data?.author || {};
