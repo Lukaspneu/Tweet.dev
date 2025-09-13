@@ -144,7 +144,7 @@ app.post('/webhook', async (req, res) => {
           extractedUrl = urlMatch[0];
         }
         
-        // Clean the content - remove "Posted", "Quoted" and ALL URLs
+        // Clean the content - remove "Posted", "Quoted" and ALL URLs - ULTRA AGGRESSIVE
         content = content
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
           .replace(/https?:\/\/[^\s]+/g, '') // Remove all http/https URLs
@@ -156,6 +156,10 @@ app.post('/webhook', async (req, res) => {
           .replace(/www\.[^\s]+/g, '') // Remove www links
           .replace(/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\/[^\s]*/g, '') // Remove domain.com/path links
           .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
+          .replace(/\[([^\]]*)\]\(([^)]+)\)/g, '$1') // Remove markdown links but keep text
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/&[a-zA-Z0-9#]+;/g, '') // Remove HTML entities
+          .replace(/[^\w\s.,!?;:()-]/g, '') // Remove special characters except basic punctuation
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
         
