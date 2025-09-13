@@ -235,7 +235,8 @@ app.post('/webhook', async (req, res) => {
       data: processedData,
       timestamp: new Date().toISOString(),
       processingTime: `${processingTime}ms`,
-      server: 'render-production'
+      server: 'render-production',
+      version: '3.0.0-video-support'
     });
 
   } catch (error) {
