@@ -188,6 +188,9 @@ app.post('/webhook', async (req, res) => {
                            webhookData.media?.video_thumbnail || webhookData.attachments?.video_thumbnail ||
                            extension.videoPoster || extension.video_thumbnail;
         
+        console.log('🔍 Extracted videoUrl:', videoUrl);
+        console.log('🔍 Extracted videoPoster:', videoPoster);
+        
         tweetData = {
           id: `tweet_${tweetId}`,
           username: username,
