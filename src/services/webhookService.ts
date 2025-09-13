@@ -67,7 +67,7 @@ class WebhookService {
   }
 
   private startPollingLoop() {
-    // Poll for new tweets every 200ms for ultra-low latency
+    // INSTANT real-time polling - 100ms for maximum speed
     const pollInterval = setInterval(async () => {
       try {
         await this.checkForNewTweets()
@@ -77,17 +77,19 @@ class WebhookService {
         clearInterval(pollInterval)
         this.scheduleReconnect()
       }
-    }, 200) // Ultra-fast polling for lowest latency
+    }, 100) // 100ms - INSTANT real-time updates (10 calls/sec)
   }
 
   private async checkForNewTweets() {
     try {
-      // Check webhook endpoint for new data
+      // INSTANT real-time fetch - optimized for speed
       const response = await fetch('https://deckdev-app.onrender.com/api/latest-tweets', {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-        }
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store' // Disable all caching for instant updates
       })
 
       if (response.ok) {

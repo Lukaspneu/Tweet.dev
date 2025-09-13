@@ -324,21 +324,25 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// LATEST TWEETS ENDPOINT - For real-time tweet display
+// LATEST TWEETS ENDPOINT - OPTIMIZED for INSTANT real-time updates
 app.get('/api/latest-tweets', (req, res) => {
   try {
+    // Set headers for maximum speed
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'keep-alive'
+    });
+    
+    // Minimal response for speed - just the data
     res.status(200).json({
-      success: true,
       tweets: latestTweets,
-      count: latestTweets.length,
-      timestamp: new Date().toISOString(),
-      server: 'render-production'
+      count: latestTweets.length
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve tweets',
-      timestamp: new Date().toISOString()
+      error: 'Failed to retrieve tweets'
     });
   }
 });
