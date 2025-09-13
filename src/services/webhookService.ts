@@ -43,8 +43,8 @@ class WebhookService {
       // Initial connection test
       await this.testConnection()
       
-      // Start polling for new tweets
-      this.startPollingLoop()
+      // Start INSTANT real-time SSE connection
+      this.startSSEConnection()
       
       this.updateStatus('connected')
       this.reconnectAttempts = 0
@@ -66,47 +66,48 @@ class WebhookService {
     }
   }
 
-  private startPollingLoop() {
-    // INSTANT real-time polling - 100ms for maximum speed
-    const pollInterval = setInterval(async () => {
+  private startSSEConnection() {
+    // INSTANT real-time via Server-Sent Events - NO POLLING!
+    const eventSource = new EventSource('https://deckdev-app.onrender.com/api/tweets-stream');
+    
+    eventSource.onopen = () => {
+      console.log('🚀 SSE connection opened - INSTANT real-time updates!');
+      this.updateStatus('connected');
+    };
+
+    eventSource.onmessage = (event) => {
       try {
-        await this.checkForNewTweets()
-      } catch (error) {
-        console.error('Polling error:', error)
-        this.updateStatus('error')
-        clearInterval(pollInterval)
-        this.scheduleReconnect()
-      }
-    }, 100) // 100ms - INSTANT real-time updates (10 calls/sec)
-  }
-
-  private async checkForNewTweets() {
-    try {
-      // INSTANT real-time fetch - optimized for speed
-      const response = await fetch('https://deckdev-app.onrender.com/api/latest-tweets', {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        },
-        cache: 'no-store' // Disable all caching for instant updates
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.tweets && Array.isArray(data.tweets)) {
-          data.tweets.forEach((tweet: any) => {
-            this.processTweet(tweet)
-          })
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'connected') {
+          console.log('✅ SSE connected:', data.message);
+        } else if (data.type === 'initial_tweets') {
+          console.log(`📱 Loaded ${data.count} initial tweets`);
+          if (data.tweets && Array.isArray(data.tweets)) {
+            data.tweets.forEach((tweet: any) => {
+              this.processTweet(tweet);
+            });
+          }
+        } else if (data.type === 'new_tweet') {
+          console.log('⚡ INSTANT new tweet received via SSE:', data.tweet.username);
+          this.processTweet(data.tweet);
         }
+      } catch (error) {
+        console.error('SSE message parsing error:', error);
       }
-    } catch (error) {
-      // Silent error - don't spam console for network issues
-      if (this.status === 'connected') {
-        console.warn('Polling error:', error)
-      }
-    }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      this.updateStatus('error');
+      eventSource.close();
+      this.scheduleReconnect();
+    };
+
+    // Store event source for cleanup
+    (this as any).eventSource = eventSource;
   }
+
 
   private processTweet(tweetData: any) {
     try {
@@ -248,11 +249,22 @@ class WebhookService {
     this.reconnectAttempts++
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1) // Exponential backoff
     
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+    console.log(`Reconnecting SSE in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
     
     setTimeout(() => {
-      this.startPolling()
+      if (this.status !== 'connected') {
+        this.reconnect()
+      }
     }, delay)
+  }
+
+  // Cleanup SSE connection
+  public disconnect() {
+    if ((this as any).eventSource) {
+      (this as any).eventSource.close();
+      (this as any).eventSource = null;
+    }
+    this.updateStatus('disconnected');
   }
 
   // Simulate receiving a tweet (for testing)

@@ -224,6 +224,28 @@ app.post('/webhook', async (req, res) => {
         latestTweets = latestTweets.slice(0, maxTweets);
       }
 
+      // INSTANTLY broadcast new tweet to all connected SSE clients
+      if (global.sseConnections && global.sseConnections.length > 0) {
+        const sseData = {
+          type: 'new_tweet',
+          tweet: tweetData,
+          timestamp: new Date().toISOString()
+        };
+        
+        const sseMessage = `data: ${JSON.stringify(sseData)}\n\n`;
+        
+        // Send to all connected clients
+        global.sseConnections.forEach((conn, index) => {
+          try {
+            conn.write(sseMessage);
+          } catch (error) {
+            // Remove dead connections
+            console.log(`Removing dead SSE connection ${index}`);
+            global.sseConnections.splice(index, 1);
+          }
+        });
+      }
+
       console.log(`📱 New tweet stored: ${tweetData.username} - ${tweetData.text.substring(0, 50)}...`);
     }
 
@@ -345,6 +367,57 @@ app.get('/api/latest-tweets', (req, res) => {
       error: 'Failed to retrieve tweets'
     });
   }
+});
+
+// SERVER-SENT EVENTS ENDPOINT - INSTANT real-time tweet updates
+app.get('/api/tweets-stream', (req, res) => {
+  // Set SSE headers for instant real-time updates
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  // Send initial connection confirmation
+  res.write(`data: ${JSON.stringify({
+    type: 'connected',
+    message: 'SSE connection established',
+    timestamp: new Date().toISOString()
+  })}\n\n`);
+
+  // Send current tweets to new client
+  res.write(`data: ${JSON.stringify({
+    type: 'initial_tweets',
+    tweets: latestTweets,
+    count: latestTweets.length,
+    timestamp: new Date().toISOString()
+  })}\n\n`);
+
+  // Keep connection alive with heartbeat
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat ${Date.now()}\n\n`);
+  }, 30000); // Every 30 seconds
+
+  // Store connection for broadcasting new tweets
+  if (!global.sseConnections) {
+    global.sseConnections = [];
+  }
+  global.sseConnections.push(res);
+
+  // Clean up on disconnect
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    global.sseConnections = global.sseConnections.filter(conn => conn !== res);
+  });
+
+  req.on('error', () => {
+    clearInterval(heartbeat);
+    global.sseConnections = global.sseConnections.filter(conn => conn !== res);
+  });
 });
 
 // API STATUS ENDPOINT
