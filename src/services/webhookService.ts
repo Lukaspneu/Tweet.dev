@@ -196,11 +196,21 @@ class WebhookService {
         
         timestamp = tweetData.receivedAt || Date.now();
         
+        // FALLBACK: Extract image URLs from raw text if no image field found
+        if (!imageUrl && rawText) {
+          const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i);
+          if (imageUrlMatch) {
+            imageUrl = imageUrlMatch[0];
+            console.log('🖼️ Image extracted from text:', imageUrl);
+          }
+        }
+
         // DEBUG: Log image extraction for PostInfo/FeedPost structure
         if (imageUrl) {
           console.log('🖼️ Image found in PostInfo/FeedPost:', imageUrl);
         } else {
           console.log('❌ No image found in PostInfo/FeedPost structure. Available fields:', Object.keys(tweetData), Object.keys(extension));
+          console.log('📝 Raw text content:', rawText);
         }
       } else {
         // Legacy structure - extract tweet data with better parsing
@@ -285,11 +295,21 @@ class WebhookService {
                      tweetData.media_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
         
+        // FALLBACK: Extract image URLs from raw text if no image field found
+        if (!imageUrl && rawText) {
+          const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i);
+          if (imageUrlMatch) {
+            imageUrl = imageUrlMatch[0];
+            console.log('🖼️ Image extracted from text (legacy):', imageUrl);
+          }
+        }
+
         // DEBUG: Log image extraction for legacy structure
         if (imageUrl) {
           console.log('🖼️ Image found in legacy structure:', imageUrl);
         } else {
           console.log('❌ No image found in legacy structure. Available fields:', Object.keys(tweetData));
+          console.log('📝 Raw text content:', rawText);
         }
       }
       
@@ -308,6 +328,16 @@ class WebhookService {
         followerCount: followerCount,
         source: 'webhook'
       }
+
+      // DEBUG: Log final tweet data to see what we're sending to the UI
+      console.log('📱 Final tweet data:', {
+        id: tweet.id,
+        username: tweet.username,
+        text: tweet.text,
+        imageUrl: tweet.imageUrl,
+        videoUrl: tweet.videoUrl,
+        videoPoster: tweet.videoPoster
+      });
 
       // Validate required fields
       if (!tweet.id || !tweet.text) {

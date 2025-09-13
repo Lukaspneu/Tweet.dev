@@ -394,7 +394,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                       </div>
                     )}
                       
-                      {/* Image Media - Simplified */}
+                      {/* Image Media - Enhanced with debugging */}
                       {tweet.imageUrl && !tweet.videoUrl && (
                         <div className="px-0 pt-2">
                           <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
@@ -403,15 +403,24 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                               className="w-full max-h-[400px] object-contain rounded-lg" 
                               src={tweet.imageUrl}
                               onError={(e) => {
-                                console.error('Image failed to load:', tweet.imageUrl);
+                                console.error('❌ Image failed to load:', tweet.imageUrl);
                                 const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
+                                target.style.border = '2px solid red';
+                                target.alt = 'Image failed to load';
+                                target.style.display = 'block';
                               }}
                               onLoad={() => {
-                                console.log('Image loaded successfully:', tweet.imageUrl);
+                                console.log('✅ Image loaded successfully:', tweet.imageUrl);
                               }}
                             />
                           </div>
+                      </div>
+                    )}
+                    
+                    {/* Debug: Show if no media is found */}
+                    {!tweet.imageUrl && !tweet.videoUrl && (
+                      <div className="px-0 pt-2 text-xs text-gray-500">
+                        🔍 No media detected - imageUrl: {tweet.imageUrl || 'null'}, videoUrl: {tweet.videoUrl || 'null'}
                       </div>
                     )}
                     </div>
