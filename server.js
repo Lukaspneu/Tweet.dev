@@ -224,29 +224,29 @@ app.post('/webhook', async (req, res) => {
         latestTweets = latestTweets.slice(0, maxTweets);
       }
 
-      // INSTANTLY broadcast new tweet to all connected SSE clients
-      if (global.sseConnections && global.sseConnections.length > 0) {
-        const sseData = {
-          type: 'new_tweet',
-          tweet: tweetData,
-          timestamp: new Date().toISOString()
-        };
-        
-        const sseMessage = `data: ${JSON.stringify(sseData)}\n\n`;
-        
-        // Send to all connected clients
-        global.sseConnections.forEach((conn, index) => {
-          try {
-            conn.write(sseMessage);
-          } catch (error) {
-            // Remove dead connections
-            console.log(`Removing dead SSE connection ${index}`);
-            global.sseConnections.splice(index, 1);
-          }
-        });
-      }
-
       console.log(`📱 New tweet stored: ${tweetData.username} - ${tweetData.text.substring(0, 50)}...`);
+    }
+
+    // INSTANTLY broadcast new tweet to all connected SSE clients - BEFORE response!
+    if (global.sseConnections && global.sseConnections.length > 0) {
+      // Send IMMEDIATELY - no processing delays
+      const sseMessage = `data: ${JSON.stringify({
+        type: 'new_tweet',
+        tweet: tweetData,
+        timestamp: Date.now() // Use timestamp for speed
+      })}\n\n`;
+      
+      // Send to all connected clients IMMEDIATELY
+      global.sseConnections.forEach((conn, index) => {
+        try {
+          conn.write(sseMessage);
+          // Force flush for instant delivery
+          if (conn.flush) conn.flush();
+        } catch (error) {
+          // Remove dead connections silently for speed
+          global.sseConnections.splice(index, 1);
+        }
+      });
     }
 
     // Log successful processing (minimal for performance)
@@ -263,7 +263,7 @@ app.post('/webhook', async (req, res) => {
       timestamp: new Date().toISOString(),
       processingTime: `${processingTime}ms`,
       server: 'render-production',
-      version: '3.0.0-video-support'
+      version: '3.1.0-instant-sse'
     });
 
   } catch (error) {
@@ -397,10 +397,10 @@ app.get('/api/tweets-stream', (req, res) => {
     timestamp: new Date().toISOString()
   })}\n\n`);
 
-  // Keep connection alive with heartbeat
+  // Keep connection alive with heartbeat - faster for better responsiveness
   const heartbeat = setInterval(() => {
     res.write(`: heartbeat ${Date.now()}\n\n`);
-  }, 30000); // Every 30 seconds
+  }, 10000); // Every 10 seconds for faster response
 
   // Store connection for broadcasting new tweets
   if (!global.sseConnections) {

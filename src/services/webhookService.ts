@@ -90,7 +90,8 @@ class WebhookService {
           }
         } else if (data.type === 'new_tweet') {
           console.log('⚡ INSTANT new tweet received via SSE:', data.tweet.username);
-          this.processTweet(data.tweet);
+          // INSTANT processing - no delays
+          this.callbacks.onNewTweet(data.tweet);
         }
       } catch (error) {
         console.error('SSE message parsing error:', error);
