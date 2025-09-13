@@ -18,6 +18,10 @@ let requestCount = 0;
 let errorCount = 0;
 let lastHealthCheck = Date.now();
 
+// Tweet storage for real-time display
+let latestTweets = [];
+const maxTweets = 100; // Keep last 100 tweets
+
 // Essential middleware only - optimized for speed
 app.use(express.json({ 
   limit: '10mb',
@@ -82,6 +86,33 @@ app.post('/webhook', async (req, res) => {
         server: 'render-production'
       }
     };
+
+    // Store tweet for real-time display (if it's a tweet)
+    if (webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content) {
+      const tweetData = {
+        id: webhookId,
+        username: webhookData.username || webhookData.author?.username || 'unknown',
+        displayName: webhookData.displayName || webhookData.author?.displayName || webhookData.username || 'Unknown User',
+        text: webhookData.text || webhookData.content || webhookData.message || 'No content',
+        timestamp: new Date().toISOString(),
+        profileImage: webhookData.profileImage || webhookData.author?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(webhookData.username || 'User')}&background=1f2937&color=fff`,
+        url: webhookData.url || webhookData.tweetUrl || webhookData.link,
+        imageUrl: webhookData.imageUrl || webhookData.media?.image || webhookData.attachments?.image,
+        followerCount: webhookData.followerCount || webhookData.author?.followerCount || '1K',
+        source: 'webhook',
+        receivedAt: Date.now()
+      };
+
+      // Add to latest tweets (prepend for newest first)
+      latestTweets.unshift(tweetData);
+      
+      // Keep only the latest tweets
+      if (latestTweets.length > maxTweets) {
+        latestTweets = latestTweets.slice(0, maxTweets);
+      }
+
+      console.log(`📱 New tweet stored: ${tweetData.username} - ${tweetData.text.substring(0, 50)}...`);
+    }
 
     // Log successful processing (minimal for performance)
     const processingTime = Date.now() - webhookStartTime;
@@ -179,6 +210,25 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// LATEST TWEETS ENDPOINT - For real-time tweet display
+app.get('/api/latest-tweets', (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      tweets: latestTweets,
+      count: latestTweets.length,
+      timestamp: new Date().toISOString(),
+      server: 'render-production'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve tweets',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // API STATUS ENDPOINT
 app.get('/api/status', (req, res) => {
   res.status(200).json({
@@ -190,6 +240,7 @@ app.get('/api/status', (req, res) => {
       webhook: '/webhook (POST) - Main webhook endpoint',
       health: '/health (GET) - Health check with metrics',
       status: '/api/status (GET) - API status',
+      latestTweets: '/api/latest-tweets (GET) - Latest tweets for display',
       root: '/ (GET) - React app'
     },
     features: [
@@ -198,8 +249,13 @@ app.get('/api/status', (req, res) => {
       'CORS-enabled for universal access',
       'Production-ready error handling',
       'Performance monitoring',
+      'Real-time tweet storage',
       'Custom domain compatible'
-    ]
+    ],
+    stats: {
+      totalTweets: latestTweets.length,
+      lastTweetReceived: latestTweets.length > 0 ? latestTweets[0].receivedAt : null
+    }
   });
 });
 
