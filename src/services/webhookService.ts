@@ -196,12 +196,34 @@ class WebhookService {
         
         timestamp = tweetData.receivedAt || Date.now();
         
-        // FALLBACK: Extract image URLs from raw text if no image field found
-        if (!imageUrl && rawText) {
-          const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i);
-          if (imageUrlMatch) {
-            imageUrl = imageUrlMatch[0];
-            console.log('🖼️ Image extracted from text:', imageUrl);
+        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs
+        if (!imageUrl) {
+          // Search in raw text
+          if (rawText) {
+            const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
+            if (imageUrlMatch) {
+              imageUrl = imageUrlMatch[0];
+              console.log('🖼️ Image extracted from raw text (PostInfo):', imageUrl);
+            }
+          }
+          
+          // Search in the entire tweetData object as JSON string
+          if (!imageUrl) {
+            const jsonString = JSON.stringify(tweetData);
+            const imageUrlMatch = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
+            if (imageUrlMatch) {
+              imageUrl = imageUrlMatch[0];
+              console.log('🖼️ Image extracted from JSON string (PostInfo):', imageUrl);
+            }
+          }
+          
+          // Search for pbs.twimg.com URLs (Twitter's image CDN)
+          if (!imageUrl) {
+            const twitterImageMatch = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/i);
+            if (twitterImageMatch) {
+              imageUrl = twitterImageMatch[0];
+              console.log('🖼️ Twitter CDN image found (PostInfo):', imageUrl);
+            }
           }
         }
 
@@ -256,21 +278,41 @@ class WebhookService {
                       `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
         followerCount = tweetData.followerCount || author.followerCount || '1K';
         tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
-        // COMPREHENSIVE IMAGE EXTRACTION for legacy structure - Check ALL possible fields
+        // ULTRA AGGRESSIVE IMAGE EXTRACTION - Check EVERYTHING!
         imageUrl = tweetData.imageUrl || 
                   tweetData.media?.image || 
                   tweetData.attachments?.image ||
                   tweetData.entities?.media?.[0]?.media_url_https ||
                   tweetData.entities?.media?.[0]?.media_url ||
+                  tweetData.entities?.media?.[0]?.media_url_http ||
                   tweetData.media_url ||
                   tweetData.media_url_https ||
+                  tweetData.media_url_http ||
                   tweetData.image ||
                   tweetData.photo ||
                   tweetData.picture ||
                   tweetData.thumbnail ||
                   tweetData.twitter_image ||
                   tweetData.tweet_image ||
-                  tweetData.media_image;
+                  tweetData.media_image ||
+                  tweetData.image_url ||
+                  tweetData.imageUrl ||
+                  tweetData.imageURL ||
+                  tweetData.ImageUrl ||
+                  tweetData.IMAGE_URL ||
+                  tweetData.media?.url ||
+                  tweetData.media?.media_url ||
+                  tweetData.media?.media_url_https ||
+                  tweetData.media?.urls?.[0] ||
+                  tweetData.attachments?.url ||
+                  tweetData.attachments?.media_url ||
+                  tweetData.attachments?.urls?.[0] ||
+                  tweetData.entities?.urls?.[0]?.expanded_url ||
+                  tweetData.entities?.urls?.[0]?.url ||
+                  tweetData.extended_entities?.media?.[0]?.media_url_https ||
+                  tweetData.extended_entities?.media?.[0]?.media_url ||
+                  tweetData.quoted_status?.entities?.media?.[0]?.media_url_https ||
+                  tweetData.retweeted_status?.entities?.media?.[0]?.media_url_https;
         
         // COMPREHENSIVE VIDEO EXTRACTION for legacy structure - Check ALL possible fields
         videoUrl = tweetData.videoUrl || 
@@ -295,12 +337,51 @@ class WebhookService {
                      tweetData.media_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
         
-        // FALLBACK: Extract image URLs from raw text if no image field found
-        if (!imageUrl && rawText) {
-          const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp)/i);
-          if (imageUrlMatch) {
-            imageUrl = imageUrlMatch[0];
-            console.log('🖼️ Image extracted from text (legacy):', imageUrl);
+        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs
+        if (!imageUrl) {
+          // Search in raw text
+          if (rawText) {
+            const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
+            if (imageUrlMatch) {
+              imageUrl = imageUrlMatch[0];
+              console.log('🖼️ Image extracted from raw text:', imageUrl);
+            }
+          }
+          
+          // Search in the entire tweetData object as JSON string
+          if (!imageUrl) {
+            const jsonString = JSON.stringify(tweetData);
+            const imageUrlMatch = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
+            if (imageUrlMatch) {
+              imageUrl = imageUrlMatch[0];
+              console.log('🖼️ Image extracted from JSON string:', imageUrl);
+            }
+          }
+          
+          // Search for pbs.twimg.com URLs (Twitter's image CDN)
+          if (!imageUrl) {
+            const twitterImageMatch = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/i);
+            if (twitterImageMatch) {
+              imageUrl = twitterImageMatch[0];
+              console.log('🖼️ Twitter CDN image found:', imageUrl);
+            }
+          }
+          
+          // Search for any URL that might be an image
+          if (!imageUrl) {
+            const anyUrlMatch = rawText.match(/https?:\/\/[^\s]+/g);
+            if (anyUrlMatch) {
+              for (const url of anyUrlMatch) {
+                if (url.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i) || 
+                    url.includes('pbs.twimg.com') || 
+                    url.includes('media') || 
+                    url.includes('image')) {
+                  imageUrl = url;
+                  console.log('🖼️ Potential image URL found:', imageUrl);
+                  break;
+                }
+              }
+            }
           }
         }
 
