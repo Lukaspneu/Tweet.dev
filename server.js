@@ -91,23 +91,56 @@ app.post('/webhook', async (req, res) => {
       }
     };
 
-    // Store tweet for real-time display (if it's a tweet or FeedPost)
-    if (webhookData.tweet_id || webhookData.feed_id || webhookData.tweet_content || webhookData.type === 'tweet' || webhookData.event === 'new_tweet' || webhookData.text || webhookData.content || webhookData.data?.text || webhookData.extension?.tweet_id || webhookData.extension?.tweet_content) {
+    // Store tweet for real-time display (always try to process as tweet)
+    if (true) { // Process all webhook data as potential tweets
       
       // Handle PostInfo/FeedPost structure
       let tweetData;
       
-      if (webhookData.tweet_id || webhookData.feed_id || webhookData.extension?.tweet_id) {
-        // New PostInfo/FeedPost structure (including extension field)
-        const extension = webhookData.extension || {};
-        const tweetId = webhookData.tweet_id || extension.tweet_id;
-        const username = webhookData.twitter_user_handle || extension.twitter_user_handle || 'unknown';
-        const displayName = webhookData.twitter_user_display_name || extension.twitter_user_display_name || webhookData.displayName || extension.displayName || username;
-        const profileImage = webhookData.twitter_user_avatar || extension.twitter_user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        const followerCount = webhookData.twitter_user_followers || extension.twitter_user_followers || webhookData.followerCount || extension.followerCount || '1K';
-        let content = webhookData.tweet_content || extension.tweet_content || 'No content';
-        const published = webhookData.published || extension.published || new Date().toISOString();
-        const received = webhookData.received || extension.received || new Date().toISOString();
+      // Universal tweet parser - handles any data format
+      const extension = webhookData.extension || {};
+      
+      // Extract tweet ID from multiple possible sources
+      const tweetId = webhookData.tweet_id || extension.tweet_id || webhookData.id || 
+                     (webhookData.url && webhookData.url.match(/status\/(\d+)/)?.[1]) || 
+                     Date.now();
+      
+      // Extract username from multiple possible sources
+      const username = webhookData.twitter_user_handle || extension.twitter_user_handle || 
+                      webhookData.username || webhookData.handle || 
+                      (webhookData.url && webhookData.url.match(/twitter\.com\/([^\/]+)/)?.[1]) ||
+                      'unknown';
+      
+      // Extract display name from multiple possible sources
+      const displayName = webhookData.twitter_user_display_name || extension.twitter_user_display_name || 
+                         webhookData.displayName || extension.displayName || 
+                         webhookData.name || webhookData.display_name || username;
+      
+      // Extract profile image from multiple possible sources
+      const profileImage = webhookData.twitter_user_avatar || extension.twitter_user_avatar || 
+                          webhookData.profileImage || webhookData.avatar || 
+                          webhookData.profile_image || webhookData.avatar_url ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+      
+      // Extract follower count from multiple possible sources
+      const followerCount = webhookData.twitter_user_followers || extension.twitter_user_followers || 
+                           webhookData.followerCount || webhookData.followers || 
+                           webhookData.follower_count || '1K';
+      
+      // Extract content from multiple possible sources
+      let content = webhookData.tweet_content || extension.tweet_content || 
+                   webhookData.text || webhookData.content || 
+                   webhookData.message || webhookData.description || 'No content';
+      
+      const published = webhookData.published || extension.published || webhookData.timestamp || new Date().toISOString();
+      const received = webhookData.received || extension.received || new Date().toISOString();
+        
+        // Extract URL before cleaning content
+        let extractedUrl = null;
+        const urlMatch = content.match(/https?:\/\/[^\s]+/);
+        if (urlMatch) {
+          extractedUrl = urlMatch[0];
+        }
         
         // Clean the content - remove "Posted", "Quoted" and URLs
         content = content
@@ -124,8 +157,12 @@ app.post('/webhook', async (req, res) => {
           content = 'Tweet content';
         }
         
-        // Create tweet URL from tweet_id
-        const tweetUrl = `https://twitter.com/${username}/status/${tweetId}`;
+        // Create tweet URL - use extracted URL or generate from tweet_id
+        const tweetUrl = extractedUrl || webhookData.url || `https://twitter.com/${username}/status/${tweetId}`;
+        
+        // Extract image URL if present
+        const imageUrl = webhookData.imageUrl || webhookData.image || webhookData.media?.image || 
+                        webhookData.attachments?.image || webhookData.photo || webhookData.picture;
         
         tweetData = {
           id: `tweet_${tweetId}`,
@@ -135,6 +172,7 @@ app.post('/webhook', async (req, res) => {
           timestamp: published,
           profileImage: profileImage,
           url: tweetUrl,
+          imageUrl: imageUrl,
           followerCount: followerCount,
           source: 'webhook',
           receivedAt: new Date(received).getTime(),
@@ -143,61 +181,6 @@ app.post('/webhook', async (req, res) => {
           feedId: webhookData.feed_id,
           linkedTo: webhookData.linked_to
         };
-      } else {
-        // Legacy structure - extract tweet data with better parsing
-        let rawText = webhookData.text || webhookData.content || webhookData.message || webhookData.data?.text || 'No content';
-        
-        // Clean markdown links and extract clean text
-        let cleanText = rawText;
-        let extractedUrl = null;
-        
-        // Handle markdown links like [text](url)
-        const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
-        const linkMatches = [...rawText.matchAll(markdownLinkRegex)];
-        
-        if (linkMatches.length > 0) {
-          // Extract the link text (first capture group)
-          cleanText = linkMatches.map(match => match[1]).join(' ').trim();
-          // Extract the URL (second capture group) - use the first one found
-          extractedUrl = linkMatches[0][2];
-        }
-        
-        // Clean up any remaining markdown or unwanted characters
-        cleanText = cleanText
-          .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
-          .replace(/\[Posted\]/g, '') // Remove [Posted] text
-          .replace(/\[↧\]/g, '') // Remove [↧] symbols
-          .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
-          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
-          .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
-          .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
-          .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
-          .replace(/\s+/g, ' ') // Clean up extra spaces
-          .trim();
-        
-        const author = webhookData.author || webhookData.data?.author || {};
-        const username = webhookData.username || author.username || webhookData.data?.username || webhookData.twitter_user_handle || 'unknown';
-        const displayName = webhookData.displayName || author.displayName || webhookData.data?.displayName || username || 'Unknown User';
-        const profileImage = webhookData.profileImage || author.profileImage || webhookData.data?.profileImage || webhookData.twitter_user_avatar || 
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-        const followerCount = webhookData.followerCount || author.followerCount || webhookData.data?.followerCount || '1K';
-        const tweetUrl = extractedUrl || webhookData.url || webhookData.tweetUrl || webhookData.link || webhookData.data?.url;
-        const imageUrl = webhookData.imageUrl || webhookData.media?.image || webhookData.attachments?.image || webhookData.data?.imageUrl;
-        
-        tweetData = {
-          id: webhookId,
-          username: username,
-          displayName: displayName,
-          text: cleanText,
-          timestamp: new Date().toISOString(),
-          profileImage: profileImage,
-          url: tweetUrl,
-          imageUrl: imageUrl,
-          followerCount: followerCount,
-          source: 'webhook',
-          receivedAt: Date.now()
-        };
-      }
 
       // Add to latest tweets (prepend for newest first)
       latestTweets.unshift(tweetData);
