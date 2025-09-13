@@ -21,8 +21,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
   const [webhookService, setWebhookService] = useState<WebhookService | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const [sessionStartTime] = useState<number>(Date.now())
-  const [currentTime, setCurrentTime] = useState<number>(Date.now())
 
   const handleDeployClick = () => {
     if (onLaunchModalOpen) {
@@ -30,17 +28,9 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     }
   }
 
-  // Continuous timer to update every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(Date.now())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
   const formatTimeAgo = (timestamp: number) => {
-    const diff = currentTime - timestamp
+    const now = Date.now()
+    const diff = now - timestamp
     const seconds = Math.floor(diff / 1000)
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
@@ -51,24 +41,11 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     return `${Math.floor(hours / 24)}d ago`
   }
 
-  const formatSessionTime = () => {
-    const diff = currentTime - sessionStartTime
-    const seconds = Math.floor(diff / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-    
-    if (seconds < 60) return `${seconds}s`
-    if (minutes < 60) return `${minutes}m ${seconds % 60}s`
-    if (hours < 24) return `${hours}h ${minutes % 60}m`
-    return `${Math.floor(hours / 24)}d ${hours % 24}h`
-  }
-
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp)
     const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     const timeAgo = formatTimeAgo(timestamp)
-    const sessionTime = formatSessionTime()
-    return `${timeString} • ${timeAgo} • Session: ${sessionTime}`
+    return `${timeString} • ${timeAgo}`
   }
 
   const filteredTweets = tweets.filter(tweet => 
@@ -197,17 +174,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
               style={{backgroundColor: 'rgb(20,20,20)', borderColor: 'rgb(80,80,80)', color: 'rgb(192,192,192)'}}
             />
           </div>
-        </div>
-        
-        {/* Session Time Display */}
-        <div className="flex items-center gap-1 px-2 py-1 rounded-md border" style={{backgroundColor: 'rgb(20,20,20)', borderColor: 'rgb(80,80,80)'}}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-            <path d="M12 6v6l4 2"></path>
-            <circle cx="12" cy="12" r="10"></circle>
-          </svg>
-          <span className="text-xs font-mono text-green-400" style={{minWidth: '60px'}}>
-            {formatSessionTime()}
-          </span>
         </div>
         
         {/* Connection Status */}
