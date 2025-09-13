@@ -84,51 +84,59 @@ html {
   box-shadow: 0 0 0 4px rgba(192, 192, 192, 0.2);
 }
 
-/* Custom text selection styling - ultra smooth with 0.6x slower sensitivity */
-::selection {
+/* Super smooth text selection with 0.5x sensitivity */
+p::selection,
+span::selection,
+div::selection,
+h1::selection,
+h2::selection,
+h3::selection,
+h4::selection,
+h5::selection,
+h6::selection,
+a::selection,
+button::selection,
+input::selection,
+textarea::selection,
+label::selection {
   background-color: rgb(185, 255, 93);
   color: black;
-  -webkit-text-stroke: 0;
-  text-shadow: none;
-  transition: all 0.67s ease-out;
-  animation: selectionSmooth 1.0s ease-out;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  animation: smoothSelection 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-::-moz-selection {
+p::-moz-selection,
+span::-moz-selection,
+div::-moz-selection,
+h1::-moz-selection,
+h2::-moz-selection,
+h3::-moz-selection,
+h4::-moz-selection,
+h5::-moz-selection,
+h6::-moz-selection,
+a::-moz-selection,
+button::-moz-selection,
+input::-moz-selection,
+textarea::-moz-selection,
+label::-moz-selection {
   background-color: rgb(185, 255, 93);
   color: black;
-  -webkit-text-stroke: 0;
-  text-shadow: none;
-  transition: all 0.67s ease-out;
-  animation: selectionSmooth 1.0s ease-out;
+  transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  animation: smoothSelection 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-/* Very slow and smooth selection animation - 0.6x slower */
-@keyframes selectionSmooth {
+@keyframes smoothSelection {
   0% {
-    background-color: rgba(185, 255, 93, 0.05);
-    transform: scale(1.08);
-    opacity: 0.1;
-  }
-  25% {
     background-color: rgba(185, 255, 93, 0.2);
-    transform: scale(1.05);
-    opacity: 0.3;
+    transform: scale(1.01);
   }
   50% {
-    background-color: rgba(185, 255, 93, 0.4);
-    transform: scale(1.03);
-    opacity: 0.5;
-  }
-  75% {
     background-color: rgba(185, 255, 93, 0.7);
-    transform: scale(1.01);
-    opacity: 0.8;
+    transform: scale(1.005);
   }
   100% {
     background-color: rgb(185, 255, 93);
     transform: scale(1);
-    opacity: 1;
   }
 }
 
@@ -138,7 +146,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
   -webkit-text-stroke: 0;
-  cursor: text;
+  /* Removed cursor: text to prevent whole screen highlighting */
   transition: all 0.5s ease-out;
   /* Touchpad sensitivity reduction */
   -webkit-touch-action: manipulation;
@@ -175,7 +183,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
   -webkit-text-stroke: 0;
-  cursor: text;
+  /* Removed cursor: text to prevent whole screen highlighting */
   /* Optimized transitions for 180 FPS */
   transition: all 0.1s cubic-bezier(0.25, 0.1, 0.25, 1);
   /* Touchpad sensitivity reduction */
@@ -319,66 +327,76 @@ html {
   }
 }
 
-/* Reduce touchpad and mouse sensitivity for text selection */
+/* Reduced mouse/touchpad sensitivity for smooth selection */
 body, html {
-  -webkit-touch-callout: none;
+  -webkit-touch-action: manipulation;
+  touch-action: manipulation;
   -webkit-user-select: text;
-  -khtml-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
   user-select: text;
+  /* Reduce sensitivity for smoother selection */
   -webkit-tap-highlight-color: transparent;
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
+  cursor: default;
+}
+
+/* Smooth text selection with reduced sensitivity */
+p, span, div, h1, h2, h3, h4, h5, h6, a, input, textarea, label {
   cursor: text;
-  pointer-events: auto;
-  /* Reduce touchpad/mouse sensitivity */
+  -webkit-user-select: text;
+  user-select: text;
+  /* Reduced sensitivity for smoother selection */
   -webkit-touch-action: manipulation;
   touch-action: manipulation;
-  -webkit-transform: translateZ(0);
+  transition: all 0.1s ease-out;
+}
+
+button, [role="button"] {
+  cursor: pointer;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+a[href] {
+  cursor: pointer;
+}
+
+/* Text Selection Tooltip Styles - Production Ready */
+[data-selection-tooltip="true"] {
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform, opacity;
   transform: translateZ(0);
-  will-change: auto;
-}
-
-/* Smooth text selection with reduced touchpad/mouse sensitivity */
-input, textarea, [contenteditable] {
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  cursor: text;
-  transition: all 0.5s ease-out;
-  pointer-events: auto;
-  -webkit-touch-callout: none;
-  /* Touchpad sensitivity reduction */
-  -webkit-touch-action: manipulation;
-  touch-action: manipulation;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  will-change: auto;
+  animation: tooltipAppearSmooth 0.15s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-/* Reduce mouse sensitivity for interactive elements during selection */
-button, a {
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  cursor: text;
+[data-selection-tooltip="true"] * {
   pointer-events: auto;
-  -webkit-touch-callout: none;
 }
 
-/* Additional mouse sensitivity reduction for text selection */
-::selection {
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
-  pointer-events: auto;
+@keyframes tooltipAppearSmooth {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0) scale(0.92);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translateY(-1px) translateZ(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateZ(0) scale(1);
+  }
 }
+
+/* Ultra smooth tooltip positioning */
+[data-selection-tooltip="true"] {
+  transition: all 0.12s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Clean selection highlighting - no animations to prevent bugs */
+/* Removed duplicate selection styling to prevent conflicts */
 
 /* Background animation */
 @keyframes float {

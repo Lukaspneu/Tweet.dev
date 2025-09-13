@@ -5,9 +5,17 @@ import { X, Blocks, Bot, Zap, Globe, Sparkles, Pen, Plus, ArrowRight } from 'luc
 interface LaunchTokenModalProps {
   isOpen: boolean
   onClose: () => void
+  tokenData?: {
+    name: string
+    ticker: string
+    tweetImage?: string
+    profileImage?: string
+    tweetUrl?: string
+    selectedImage?: string
+  }
 }
 
-const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) => {
+const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose, tokenData }) => {
   const [formData, setFormData] = useState({
     name: '',
     symbol: '',
@@ -15,6 +23,27 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
     twitter: '',
     amount: '0.1'
   })
+
+  // Auto-fill form when tokenData is provided
+  React.useEffect(() => {
+    if (tokenData && isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        name: tokenData.name,
+        symbol: tokenData.ticker,
+        twitter: tokenData.tweetUrl || ''
+      }))
+    }
+  }, [tokenData, isOpen])
+
+  const [selectedImage, setSelectedImage] = useState<string>('')
+
+  // Auto-select image when tokenData is provided
+  React.useEffect(() => {
+    if (tokenData && isOpen) {
+      setSelectedImage(tokenData.selectedImage || '')
+    }
+  }, [tokenData, isOpen])
 
   const [selectedPlatform, setSelectedPlatform] = useState(() => {
     // Load saved default platform from localStorage
@@ -211,26 +240,71 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
                       <div className="grid gap-2">
                         <label className="text-sm leading-none font-medium select-none flex items-center gap-1">select image</label>
                         <div className="flex flex-wrap gap-1.5 py-1">
-                          <div className="relative group">
-                            <button type="button" className="w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none ring-2 ring-ring ring-offset-2">
-                              <div className="relative w-full h-full">
-                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500"></div>
+                          {/* Tweet Image */}
+                          {tokenData?.tweetImage && (
+                            <div className="relative group">
+                              <button 
+                                type="button" 
+                                onClick={() => setSelectedImage(tokenData.tweetImage!)}
+                                className={`w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none ${selectedImage === tokenData.tweetImage ? 'ring-2 ring-green-400 ring-offset-2' : 'border-border'}`}
+                              >
+                                <img 
+                                  src={tokenData.tweetImage} 
+                                  alt="Tweet Image" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                              <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
+                                <Pen className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Profile Image */}
+                          {tokenData?.profileImage && (
+                            <div className="relative group">
+                              <button 
+                                type="button" 
+                                onClick={() => setSelectedImage(tokenData.profileImage!)}
+                                className={`w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none ${selectedImage === tokenData.profileImage ? 'ring-2 ring-green-400 ring-offset-2' : 'border-border'}`}
+                              >
+                                <img 
+                                  src={tokenData.profileImage} 
+                                  alt="Profile Image" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                              <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
+                                <Pen className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Default gradient options if no images */}
+                          {!tokenData?.tweetImage && !tokenData?.profileImage && (
+                            <>
+                              <div className="relative group">
+                                <button type="button" className="w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none ring-2 ring-ring ring-offset-2">
+                                  <div className="relative w-full h-full">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500"></div>
+                                  </div>
+                                </button>
+                                <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
+                                  <Pen className="w-3 h-3" />
+                                </button>
                               </div>
-                            </button>
-                            <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
-                              <Pen className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <div className="relative group">
-                            <button type="button" className="w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none border-border">
-                              <div className="relative w-full h-full">
-                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500"></div>
+                              <div className="relative group">
+                                <button type="button" className="w-[72px] h-[72px] overflow-hidden rounded-md border bg-muted hover:bg-muted/50 transition focus:outline-none border-border">
+                                  <div className="relative w-full h-full">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500"></div>
+                                  </div>
+                                </button>
+                                <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
+                                  <Pen className="w-3 h-3" />
+                                </button>
                               </div>
-                            </button>
-                            <button type="button" className="absolute top-0.5 right-0.5 p-1 bg-black/50 text-white rounded-bl-md rounded-tr-md opacity-0 group-hover:opacity-100 transition">
-                              <Pen className="w-3 h-3" />
-                            </button>
-                          </div>
+                            </>
+                          )}
                           <div className="w-[72px] h-[72px] flex items-center justify-center rounded-md border border-dashed border-muted-foreground text-muted-foreground bg-muted hover:bg-muted/50 transition relative">
                             <button type="button" className="absolute inset-0 flex items-center justify-center z-10">
                               <Plus className="w-5 h-5" />
@@ -278,7 +352,7 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
                               style={{
                                 backgroundColor: 'rgba(30, 30, 30, 0.8)',
                                 borderColor: 'rgb(80, 80, 80)',
-                                color: 'rgb(192, 192, 192)'
+                                color: 'rgb(255, 255, 255)'
                               }}
                               placeholder="coin name" 
                               maxLength={32} 
@@ -303,7 +377,7 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
                               style={{
                                 backgroundColor: 'rgba(30, 30, 30, 0.8)',
                                 borderColor: 'rgb(80, 80, 80)',
-                                color: 'rgb(192, 192, 192)'
+                                color: 'rgb(255, 255, 255)'
                               }}
                               placeholder="MEME" 
                               minLength={1} 
@@ -329,7 +403,7 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
                           style={{
                             backgroundColor: 'rgba(30, 30, 30, 0.8)',
                             borderColor: 'rgb(80, 80, 80)',
-                            color: 'rgb(192, 192, 192)'
+                            color: 'rgb(255, 255, 255)'
                           }}
                           placeholder="https://example.com" 
                           value={formData.website}
@@ -361,7 +435,7 @@ const LaunchTokenModal: React.FC<LaunchTokenModalProps> = ({ isOpen, onClose }) 
                           style={{
                             backgroundColor: 'rgba(30, 30, 30, 0.8)',
                             borderColor: 'rgb(80, 80, 80)',
-                            color: 'rgb(192, 192, 192)'
+                            color: 'rgb(255, 255, 255)'
                           }}
                           placeholder="https://x.com" 
                           value={formData.twitter}

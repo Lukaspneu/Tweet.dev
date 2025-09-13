@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, RefreshCw, Trash2 } from 'lucide-react'
+import { Search, RefreshCw, Trash2, Play, Pause } from 'lucide-react'
 
 interface TwitterFeedProps {
   onLaunchModalOpen?: () => void
@@ -20,7 +20,11 @@ interface Tweet {
 const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [tweets, setTweets] = useState<Tweet[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true)
+  const [isAutoScrolling] = useState(true)
+  const [isPausedOnHover, setIsPausedOnHover] = useState(false)
+  const [showHoverBox, setShowHoverBox] = useState(false)
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [hoverPauseEnabled, setHoverPauseEnabled] = useState(true)
 
   const handleDeployClick = () => {
     if (onLaunchModalOpen) {
@@ -273,16 +277,54 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     setTweets([])
   }
 
-  // Auto-scroll effect
+  const handleTweetHover = () => {
+    if (isAutoScrolling && hoverPauseEnabled) {
+      setIsPausedOnHover(true)
+    }
+  }
+
+  const handleTweetLeave = () => {
+    setIsPausedOnHover(false)
+  }
+
+  const handleFeedHover = () => {
+    if (!hoverPauseEnabled) return
+    
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout)
+      setHoverTimeout(null)
+    }
+    setShowHoverBox(true)
+  }
+
+  const handleFeedLeave = () => {
+    if (!hoverPauseEnabled) return
+    
+    const timeout = setTimeout(() => {
+      setShowHoverBox(false)
+    }, 100) // Small delay to prevent flickering
+    setHoverTimeout(timeout)
+  }
+
+  // Auto-scroll effect with pause on hover
   useEffect(() => {
-    if (!isAutoScrolling) return
+    if (!isAutoScrolling || isPausedOnHover) return
 
     const interval = setInterval(() => {
       addTestTweet()
     }, Math.random() * 1500 + 800) // Random interval between 0.8-2.3 seconds for quicker updates
 
     return () => clearInterval(interval)
-  }, [isAutoScrolling])
+  }, [isAutoScrolling, isPausedOnHover])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout)
+      }
+    }
+  }, [hoverTimeout])
 
   // Add initial tweets
   useEffect(() => {
@@ -343,7 +385,18 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   }, [])
 
   return (
-    <div className="w-full h-full rounded-xl border overflow-hidden flex flex-col" style={{backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)'}}>
+    <div 
+      className={`w-full h-full rounded-xl border overflow-hidden flex flex-col relative transition-all duration-300 ${
+        showHoverBox ? 'ring-2 ring-gray-500/30 ring-offset-2 ring-offset-transparent' : ''
+      }`}
+      style={{
+        backgroundColor: 'rgb(30,30,30)', 
+        borderColor: showHoverBox ? 'rgb(120,120,120)' : 'rgb(80,80,80)',
+        boxShadow: showHoverBox ? '0 0 20px rgba(120, 120, 120, 0.1)' : 'none'
+      }}
+      onMouseEnter={handleFeedHover}
+      onMouseLeave={handleFeedLeave}
+    >
       {/* Header with search */}
       <div className="flex items-center justify-between gap-2 sm:gap-4 px-2 sm:px-4 py-3 border-b sticky top-0 z-20" style={{backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)'}}>
         <div className="flex-1 min-w-0">
@@ -380,11 +433,15 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
         </button>
         
         <button 
-          onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity ${isAutoScrolling ? 'bg-green-600/20' : 'bg-gray-600/20'}`}
-          title={isAutoScrolling ? "Stop Auto Feed" : "Start Auto Feed"}
+          onClick={() => setHoverPauseEnabled(!hoverPauseEnabled)}
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity ${hoverPauseEnabled ? 'bg-green-600/20' : 'bg-gray-600/20'}`}
+          title={hoverPauseEnabled ? "Disable Hover Pause" : "Enable Hover Pause"}
         >
-          <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${isAutoScrolling ? 'bg-green-400' : 'bg-gray-400'}`} />
+          {hoverPauseEnabled ? (
+            <Pause className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+          ) : (
+            <Play className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+          )}
         </button>
       </div>
 
@@ -418,7 +475,13 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
         ) : (
           <div className="space-y-0">
             {filteredTweets.map((tweet) => (
-              <div key={tweet.id} className="w-full max-w-full mx-auto rounded-none overflow-hidden shadow-lg transition-all duration-200 border-b border-b-[5px] border-gray-700/50">
+              <div 
+                key={tweet.id} 
+                className="w-full max-w-full mx-auto rounded-none overflow-hidden shadow-lg transition-all duration-200 border-b border-b-[5px] border-gray-700/50" 
+                data-tweet-container="true"
+                onMouseEnter={handleTweetHover}
+                onMouseLeave={handleTweetLeave}
+              >
                 <div className="relative flex flex-col w-full" style={{backgroundColor: 'rgb(30,30,30)'}}>
                   <div className="relative z-10">
                     <div className="border-b border-gray-700/50 flex items-center justify-between px-4 py-3">
@@ -443,15 +506,18 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                           </div>
                         </div>
                       </button>
-                      <button type="button" className="flex items-center justify-center gap-1.5 px-3 py-1.5 hover:bg-gray-600/30 transition-colors duration-200 rounded-lg border border-gray-600/50 bg-gray-700/30" onClick={handleDeployClick}>
-                        <div className="flex items-center gap-1.5 text-white text-xs font-medium">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-layers" aria-hidden="true">
-                            <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path>
-                            <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path>
-                            <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path>
-                          </svg>
-                          <span className="text-xs">Deploy</span>
-                        </div>
+                      <button 
+                        type="button" 
+                        className="flex items-center justify-center px-4 py-2 hover:bg-gray-600/40 transition-colors duration-200 rounded-md font-medium"
+                        style={{
+                          backgroundColor: 'rgba(30, 30, 30, 0.8)',
+                          borderColor: 'rgb(80, 80, 80)',
+                          color: 'rgb(192, 192, 192)',
+                          border: '1px solid'
+                        }}
+                        onClick={handleDeployClick}
+                      >
+                        <span className="text-sm">Deploy</span>
                       </button>
                     </div>
                     <div className="p-4">
@@ -532,6 +598,24 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
         </div>
         )}
       </div>
+
+      {/* Feed Paused Indicator */}
+      {showHoverBox && hoverPauseEnabled && (
+        <div className="absolute top-16 left-0 right-0 z-30 animate-in fade-in-0 slide-in-from-top-2 duration-300">
+          <div 
+            className="backdrop-blur-sm border rounded-md px-3 py-1.5 shadow-lg mx-4"
+            style={{
+              backgroundColor: 'rgba(30, 30, 30, 0.7)',
+              borderColor: 'rgb(80, 80, 80)'
+            }}
+          >
+            <div className="flex items-center justify-center gap-2 text-sm font-medium" style={{color: 'rgb(192, 192, 192)'}}>
+              <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+              <span>Feed Paused</span>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

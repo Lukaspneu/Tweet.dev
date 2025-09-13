@@ -5,6 +5,7 @@ import TwitterFeed from '../components/TwitterFeed'
 import YourTokens from '../components/YourTokens'
 import SettingsPanel from '../components/SettingsPanel'
 import LaunchTokenModal from '../components/LaunchTokenModal'
+import TextSelectionTooltip from '../components/TextSelectionTooltip'
 
 const ANIMATION_VARIANTS = {
   leftBox: {
@@ -56,6 +57,14 @@ const Dashboard: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState('General')
   const [isLaunchModalOpen, setIsLaunchModalOpen] = useState(false)
+  const [launchTokenData, setLaunchTokenData] = useState<{
+    name: string
+    ticker: string
+    tweetImage?: string
+    profileImage?: string
+    tweetUrl?: string
+    selectedImage?: string
+  } | null>(null)
 
   const handleSettingsClick = useCallback(() => setIsSettingsOpen(true), [])
   const handleSettingsClose = useCallback(() => setIsSettingsOpen(false), [])
@@ -65,6 +74,34 @@ const Dashboard: React.FC = () => {
   }, [])
   const handleLaunchModalOpen = useCallback(() => setIsLaunchModalOpen(true), [])
   const handleLaunchModalClose = useCallback(() => setIsLaunchModalOpen(false), [])
+
+  const handleTextSelectionAction = useCallback((action: string, selectedText: string) => {
+    console.log(`Text selection action: ${action}`, { selectedText })
+    // You can add specific logic for each action here
+    switch (action) {
+      case 'auto':
+        console.log('Auto processing selected text:', selectedText)
+        break
+      case 'instant':
+        console.log('Instant processing selected text:', selectedText)
+        break
+      default:
+        console.log('Unknown action:', action)
+    }
+  }, [])
+
+  const handleLaunchModalFromSelection = useCallback((tokenData: { 
+    name: string; 
+    ticker: string; 
+    tweetImage?: string; 
+    profileImage?: string; 
+    tweetUrl?: string;
+    selectedImage?: string;
+  }) => {
+    console.log('Opening launch modal with token data:', tokenData)
+    setLaunchTokenData(tokenData)
+    setIsLaunchModalOpen(true)
+  }, [])
 
   return (
     <div className="h-screen overflow-hidden" style={BACKGROUND_STYLE}>
@@ -120,6 +157,13 @@ const Dashboard: React.FC = () => {
       <LaunchTokenModal
         isOpen={isLaunchModalOpen}
         onClose={handleLaunchModalClose}
+        tokenData={launchTokenData || undefined}
+      />
+
+      {/* Text Selection Tooltip */}
+      <TextSelectionTooltip 
+        onAction={handleTextSelectionAction} 
+        onLaunchModalOpen={handleLaunchModalFromSelection}
       />
     </div>
   )

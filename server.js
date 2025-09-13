@@ -1,12 +1,22 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { testConnection } from './src/utils/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Test database connection on startup
+testConnection().then(success => {
+  if (success) {
+    console.log('✅ Database connection established');
+  } else {
+    console.log('⚠️  Database connection failed - running without database');
+  }
+});
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -71,13 +81,40 @@ app.post('/webhook', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    service: 'DeckDev Webhook Service',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    const dbStatus = await testConnection();
+    
+    res.status(200).json({
+      status: 'healthy',
+      service: 'DeckDev Webhook Service',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        connected: dbStatus,
+        url: process.env.DATABASE_URL ? 'configured' : 'not configured'
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        port: PORT
+      }
+    });
+  } catch (error) {
+    res.status(200).json({
+      status: 'healthy',
+      service: 'DeckDev Webhook Service',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        connected: false,
+        error: error.message
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        port: PORT
+      }
+    });
+  }
 });
 
 // Serve static files from the dist directory
