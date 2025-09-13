@@ -41,6 +41,13 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     return `${Math.floor(hours / 24)}d ago`
   }
 
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp)
+    const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    const timeAgo = formatTimeAgo(timestamp)
+    return `${timeString} • ${timeAgo}`
+  }
+
   const filteredTweets = tweets.filter(tweet => 
     tweet.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
@@ -237,25 +244,25 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
               ) : connectionStatus === 'error' ? (
                 <WifiOff className="w-8 h-8 text-red-400" />
               ) : (
-                <Search className="w-8 h-8" style={{color: 'rgb(185, 255, 93)'}} />
+              <Search className="w-8 h-8" style={{color: 'rgb(185, 255, 93)'}} />
               )}
             </div>
             
             {connectionStatus === 'connected' ? (
               <>
                 <h3 className="text-lg font-semibold text-white mb-2">Ready for Tweets</h3>
-                <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
+            <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
                   Webhook is connected and ready to receive tweets
-                </p>
-                <div className="flex gap-2 mt-4">
-                  <button 
-                    onClick={addTestTweet}
-                    className="px-3 py-1 rounded text-xs font-medium transition-colors"
-                    style={{
-                      backgroundColor: 'rgb(185, 255, 93)',
-                      color: 'rgb(0,0,0)'
-                    }}
-                  >
+            </p>
+            <div className="flex gap-2 mt-4">
+              <button 
+                onClick={addTestTweet}
+                className="px-3 py-1 rounded text-xs font-medium transition-colors"
+                style={{
+                  backgroundColor: 'rgb(185, 255, 93)',
+                  color: 'rgb(0,0,0)'
+                }}
+              >
                     Test Tweet
                   </button>
                 </div>
@@ -289,8 +296,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                     }}
                   >
                     Retry Connection
-                  </button>
-                </div>
+              </button>
+            </div>
                 <div className="mt-2 text-xs text-red-400">
                   ❌ Connection failed
                 </div>
@@ -301,9 +308,9 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                 <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
                   Setting up webhook connection
                 </p>
-                <div className="mt-2 text-xs" style={{color: 'rgb(192,192,192)'}}>
+            <div className="mt-2 text-xs" style={{color: 'rgb(192,192,192)'}}>
                   🔧 Initializing webhook system
-                </div>
+            </div>
               </>
             )}
           </div>
@@ -395,9 +402,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                             <path d="M12 6v6l4 2"></path>
                             <circle cx="12" cy="12" r="10"></circle>
                           </svg>
-                          <span>{new Date(tweet.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                          <span className="mx-2 text-gray-600 group-hover:text-gray-400 transition-colors duration-200">•</span>
-                          <span>{formatTimeAgo(tweet.timestamp)}</span>
+                          <span>{formatTimestamp(tweet.timestamp)}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <button type="button" className="text-xs flex items-center gap-1.5 text-gray-400 hover:text-gray-200" title="Translate to English">

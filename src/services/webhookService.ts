@@ -106,39 +106,55 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
-      // Better data extraction with multiple fallbacks
-      let rawText = tweetData.text || tweetData.content || tweetData.message || 'No content';
+      // Handle both PostInfo/FeedPost structure and legacy structure
+      let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, timestamp;
       
-      // Clean markdown links and extract clean text
-      let cleanText = rawText;
-      let extractedUrl = null;
-      
-      // Handle markdown links like [text](url)
-      const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
-      const linkMatches = [...rawText.matchAll(markdownLinkRegex)];
-      
-      if (linkMatches.length > 0) {
-        // Extract the link text (first capture group)
-        cleanText = linkMatches.map(match => match[1]).join(' ').trim();
-        // Extract the URL (second capture group) - use the first one found
-        extractedUrl = linkMatches[0][2];
+      if (tweetData.tweet_id || tweetData.feed_id) {
+        // New PostInfo/FeedPost structure
+        username = tweetData.username || 'unknown';
+        displayName = username; // Use handle as display name
+        profileImage = tweetData.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        cleanText = tweetData.text || 'No content';
+        tweetUrl = tweetData.url || `https://twitter.com/${username}/status/${tweetData.tweetId}`;
+        followerCount = '1K'; // Default since not in PostInfo structure
+        imageUrl = tweetData.imageUrl;
+        timestamp = tweetData.receivedAt || Date.now();
+      } else {
+        // Legacy structure - extract tweet data with better parsing
+        let rawText = tweetData.text || tweetData.content || tweetData.message || 'No content';
+        
+        // Clean markdown links and extract clean text
+        cleanText = rawText;
+        let extractedUrl = null;
+        
+        // Handle markdown links like [text](url)
+        const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+        const linkMatches = [...rawText.matchAll(markdownLinkRegex)];
+        
+        if (linkMatches.length > 0) {
+          // Extract the link text (first capture group)
+          cleanText = linkMatches.map(match => match[1]).join(' ').trim();
+          // Extract the URL (second capture group) - use the first one found
+          extractedUrl = linkMatches[0][2];
+        }
+        
+        // Clean up any remaining markdown or unwanted characters
+        cleanText = cleanText
+          .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
+          .replace(/\[Posted\]/g, '') // Remove [Posted] text
+          .replace(/\[↧\]/g, '') // Remove [↧] symbols
+          .trim();
+        
+        const author = tweetData.author || {};
+        username = tweetData.username || author.username || 'unknown';
+        displayName = tweetData.displayName || author.displayName || username || 'Unknown User';
+        profileImage = tweetData.profileImage || author.profileImage || 
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
+        followerCount = tweetData.followerCount || author.followerCount || '1K';
+        tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
+        imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
+        timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
       }
-      
-      // Clean up any remaining markdown or unwanted characters
-      cleanText = cleanText
-        .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
-        .replace(/\[Posted\]/g, '') // Remove [Posted] text
-        .replace(/\[↧\]/g, '') // Remove [↧] symbols
-        .trim();
-      
-      const author = tweetData.author || {};
-      const username = tweetData.username || author.username || 'unknown';
-      const displayName = tweetData.displayName || author.displayName || username || 'Unknown User';
-      const profileImage = tweetData.profileImage || author.profileImage || 
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1f2937&color=fff`;
-      const followerCount = tweetData.followerCount || author.followerCount || '1K';
-      const tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
-      const imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
       
       // Transform webhook data to our tweet format
       const tweet: WebhookTweet = {
@@ -146,7 +162,7 @@ class WebhookService {
         username: username,
         displayName: displayName,
         text: cleanText,
-        timestamp: tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now(),
+        timestamp: timestamp,
         profileImage: profileImage,
         url: tweetUrl,
         imageUrl: imageUrl,
