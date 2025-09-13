@@ -8,6 +8,8 @@ export interface WebhookTweet {
   profileImage?: string
   url?: string
   imageUrl?: string
+  videoUrl?: string
+  videoPoster?: string
   followerCount?: string
   source?: string
 }
