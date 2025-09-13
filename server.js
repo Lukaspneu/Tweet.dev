@@ -174,6 +174,19 @@ app.post('/webhook', async (req, res) => {
                         extension.imageUrl || extension.image || extension.media?.image ||
                         extension.attachments?.image || extension.photo || extension.picture;
         
+        // Extract video URL if present - handle multiple formats
+        const videoUrl = webhookData.videoUrl || webhookData.video || webhookData.media?.video || 
+                        webhookData.attachments?.video || webhookData.media?.video_url ||
+                        webhookData.entities?.media?.[0]?.video_info?.variants?.[0]?.url ||
+                        webhookData.extended_entities?.media?.[0]?.video_info?.variants?.[0]?.url ||
+                        extension.videoUrl || extension.video || extension.media?.video ||
+                        extension.attachments?.video;
+        
+        // Extract video poster/thumbnail if present
+        const videoPoster = webhookData.videoPoster || webhookData.video_thumbnail || 
+                           webhookData.media?.video_thumbnail || webhookData.attachments?.video_thumbnail ||
+                           extension.videoPoster || extension.video_thumbnail;
+        
         tweetData = {
           id: `tweet_${tweetId}`,
           username: username,
@@ -183,6 +196,8 @@ app.post('/webhook', async (req, res) => {
           profileImage: profileImage,
           url: tweetUrl,
           imageUrl: imageUrl,
+          videoUrl: videoUrl,
+          videoPoster: videoPoster,
           followerCount: followerCount,
           source: 'webhook',
           receivedAt: new Date(received).getTime(),

@@ -366,7 +366,22 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                           <span>{tweet.text}</span>
                         </div>
                       </div>
-                      {tweet.imageUrl && (
+                      {tweet.videoUrl && (
+                        <div className="px-0 pt-2">
+                          <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full">
+                            <video 
+                              src={tweet.videoUrl} 
+                              poster={tweet.videoPoster || tweet.imageUrl}
+                              controls 
+                              preload="metadata" 
+                              className="object-contain max-w-full max-h-[250px]"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        </div>
+                      )}
+                      {tweet.imageUrl && !tweet.videoUrl && (
                         <div className="px-0 pt-2">
                           <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full">
                             <div className="relative group w-full h-full flex items-center justify-center">
@@ -381,8 +396,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                               </button>
                             </div>
                           </div>
-                      </div>
-                    )}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
                       <button type="button" className="flex items-center justify-center h-full w-10 border-r border-gray-700/50 transition-colors duration-200 text-gray-500 hover:text-red-400 hover:bg-red-500/10" title={`Remove @${tweet.username} from feed`}>

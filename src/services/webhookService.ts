@@ -107,7 +107,7 @@ class WebhookService {
   private processTweet(tweetData: any) {
     try {
       // Handle both PostInfo/FeedPost structure and legacy structure
-      let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, timestamp;
+      let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, videoUrl, videoPoster, timestamp;
       
       if (tweetData.tweet_id || tweetData.feed_id || tweetData.extension?.tweet_id) {
         // New PostInfo/FeedPost structure (including extension field)
@@ -141,6 +141,8 @@ class WebhookService {
         tweetUrl = tweetData.url || `https://twitter.com/${username}/status/${tweetData.tweetId}`;
         followerCount = '1K'; // Default since not in PostInfo structure
         imageUrl = tweetData.imageUrl;
+        videoUrl = tweetData.videoUrl;
+        videoPoster = tweetData.videoPoster;
         timestamp = tweetData.receivedAt || Date.now();
       } else {
         // Legacy structure - extract tweet data with better parsing
@@ -187,6 +189,8 @@ class WebhookService {
         followerCount = tweetData.followerCount || author.followerCount || '1K';
         tweetUrl = extractedUrl || tweetData.url || tweetData.tweetUrl || tweetData.link;
         imageUrl = tweetData.imageUrl || tweetData.media?.image || tweetData.attachments?.image;
+        videoUrl = tweetData.videoUrl || tweetData.video || tweetData.media?.video || tweetData.attachments?.video;
+        videoPoster = tweetData.videoPoster || tweetData.video_thumbnail || tweetData.media?.video_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
       }
       
@@ -200,6 +204,8 @@ class WebhookService {
         profileImage: profileImage,
         url: tweetUrl,
         imageUrl: imageUrl,
+        videoUrl: videoUrl,
+        videoPoster: videoPoster,
         followerCount: followerCount,
         source: 'webhook'
       }
