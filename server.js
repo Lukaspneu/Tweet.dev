@@ -142,12 +142,17 @@ app.post('/webhook', async (req, res) => {
           extractedUrl = urlMatch[0];
         }
         
-        // Clean the content - remove "Posted", "Quoted" and URLs
+        // Clean the content - remove "Posted", "Quoted" and ALL URLs
         content = content
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
-          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove all http/https URLs
           .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
           .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/t\.co\/[^\s]+/g, '') // Remove t.co short links
+          .replace(/bit\.ly\/[^\s]+/g, '') // Remove bit.ly links
+          .replace(/tinyurl\.com\/[^\s]+/g, '') // Remove tinyurl links
+          .replace(/www\.[^\s]+/g, '') // Remove www links
+          .replace(/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\/[^\s]*/g, '') // Remove domain.com/path links
           .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
@@ -160,9 +165,14 @@ app.post('/webhook', async (req, res) => {
         // Create tweet URL - use extracted URL or generate from tweet_id
         const tweetUrl = extractedUrl || webhookData.url || `https://twitter.com/${username}/status/${tweetId}`;
         
-        // Extract image URL if present
+        // Extract image URL if present - handle multiple formats
         const imageUrl = webhookData.imageUrl || webhookData.image || webhookData.media?.image || 
-                        webhookData.attachments?.image || webhookData.photo || webhookData.picture;
+                        webhookData.attachments?.image || webhookData.photo || webhookData.picture ||
+                        webhookData.media?.url || webhookData.attachments?.url ||
+                        webhookData.media?.photo?.url || webhookData.entities?.media?.[0]?.media_url ||
+                        webhookData.extended_entities?.media?.[0]?.media_url ||
+                        extension.imageUrl || extension.image || extension.media?.image ||
+                        extension.attachments?.image || extension.photo || extension.picture;
         
         tweetData = {
           id: `tweet_${tweetId}`,

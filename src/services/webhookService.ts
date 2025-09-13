@@ -118,12 +118,17 @@ class WebhookService {
         followerCount = tweetData.followerCount || extension.twitter_user_followers || '1K';
         let rawText = tweetData.text || extension.tweet_content || 'No content';
         
-        // Clean the content - remove "Posted", "Quoted" and URLs
+        // Clean the content - remove "Posted", "Quoted" and ALL URLs
         cleanText = rawText
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
-          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove all http/https URLs
           .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
           .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/t\.co\/[^\s]+/g, '') // Remove t.co short links
+          .replace(/bit\.ly\/[^\s]+/g, '') // Remove bit.ly links
+          .replace(/tinyurl\.com\/[^\s]+/g, '') // Remove tinyurl links
+          .replace(/www\.[^\s]+/g, '') // Remove www links
+          .replace(/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\/[^\s]*/g, '') // Remove domain.com/path links
           .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
@@ -162,9 +167,14 @@ class WebhookService {
           .replace(/\[Posted\]/g, '') // Remove [Posted] text
           .replace(/\[↧\]/g, '') // Remove [↧] symbols
           .replace(/^(Posted|Quoted|Reposted)\s*/i, '') // Remove Posted/Quoted/Reposted prefixes
-          .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+          .replace(/https?:\/\/[^\s]+/g, '') // Remove all http/https URLs
           .replace(/x\.com\/[^\s]+/g, '') // Remove x.com links
           .replace(/twitter\.com\/[^\s]+/g, '') // Remove twitter.com links
+          .replace(/t\.co\/[^\s]+/g, '') // Remove t.co short links
+          .replace(/bit\.ly\/[^\s]+/g, '') // Remove bit.ly links
+          .replace(/tinyurl\.com\/[^\s]+/g, '') // Remove tinyurl links
+          .replace(/www\.[^\s]+/g, '') // Remove www links
+          .replace(/[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\/[^\s]*/g, '') // Remove domain.com/path links
           .replace(/@[^\s]+\s+/g, '') // Remove @mentions if they're just links
           .replace(/\s+/g, ' ') // Clean up extra spaces
           .trim();
