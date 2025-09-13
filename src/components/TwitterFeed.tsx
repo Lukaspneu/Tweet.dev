@@ -417,12 +417,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                       </div>
                     )}
                     
-                    {/* Debug: Show if no media is found */}
-                    {!tweet.imageUrl && !tweet.videoUrl && (
-                      <div className="px-0 pt-2 text-xs text-gray-500">
-                        🔍 No media detected - imageUrl: {tweet.imageUrl || 'null'}, videoUrl: {tweet.videoUrl || 'null'}
-                      </div>
-                    )}
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
                       <button type="button" className="flex items-center justify-center h-full w-10 border-r border-gray-700/50 transition-colors duration-200 text-gray-500 hover:text-red-400 hover:bg-red-500/10" title={`Remove @${tweet.username} from feed`}>

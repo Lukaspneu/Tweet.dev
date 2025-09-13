@@ -111,6 +111,39 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
+      // 🔍 COMPREHENSIVE WEBHOOK DATA ANALYSIS
+      console.log('='.repeat(80));
+      console.log('🔍 COMPLETE WEBHOOK DATA ANALYSIS');
+      console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
+      console.log('📋 Top-level fields:', Object.keys(tweetData));
+
+      // Deep analysis of all objects
+      Object.keys(tweetData).forEach(key => {
+        const value = tweetData[key];
+        if (typeof value === 'object' && value !== null) {
+          console.log(`📁 Nested object "${key}":`, Object.keys(value));
+          console.log(`📄 Content of "${key}":`, JSON.stringify(value, null, 2));
+        } else {
+          console.log(`📝 "${key}":`, value);
+        }
+      });
+
+      // Search for ANY URL containing image-like patterns
+      const searchForImages = (obj: any, path = '') => {
+        if (typeof obj === 'string' && obj.includes('http')) {
+          console.log(`🔗 URL found at ${path}:`, obj);
+        }
+        if (typeof obj === 'object' && obj !== null) {
+          Object.keys(obj).forEach(key => {
+            searchForImages(obj[key], path ? `${path}.${key}` : key);
+          });
+        }
+      };
+
+      console.log('🔍 Searching for ALL URLs in webhook data...');
+      searchForImages(tweetData);
+      console.log('='.repeat(80));
+
       // Handle both PostInfo/FeedPost structure and legacy structure
       let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, videoUrl, videoPoster, timestamp;
       
@@ -208,6 +241,29 @@ class WebhookService {
                 imageUrl = foundUrl;
                 console.log('🖼️ Image extracted from raw text (PostInfo):', imageUrl);
               }
+            }
+          }
+
+          // TWITTER URL FALLBACK: Try to extract tweet ID and use Twitter's oEmbed API
+          if (!imageUrl && tweetUrl) {
+            const tweetIdMatch = tweetUrl.match(/twitter\.com\/\w+\/status\/(\d+)/) || tweetUrl.match(/x\.com\/\w+\/status\/(\d+)/);
+            if (tweetIdMatch) {
+              const tweetId = tweetIdMatch[1];
+              // Use Twitter's oEmbed API to get tweet data with media
+              fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(tweetUrl)}&omit_script=true`)
+                .then(response => response.json())
+                .then(data => {
+                  if (data.html) {
+                    // Extract image from oEmbed HTML
+                    const imgMatch = data.html.match(/<img[^>]+src="([^"]+)"/);
+                    if (imgMatch && !imgMatch[1].includes('profile_images')) {
+                      console.log('🖼️ Image found via Twitter oEmbed:', imgMatch[1]);
+                      // Update the tweet with the found image
+                      this.updateTweetWithImage(tweetData.id, imgMatch[1]);
+                    }
+                  }
+                })
+                .catch(err => console.log('oEmbed fetch failed:', err));
             }
           }
           
@@ -546,6 +602,13 @@ class WebhookService {
   reconnect() {
     this.reconnectAttempts = 0
     this.startPolling()
+  }
+
+  // Update tweet with image URL found via oEmbed
+  private updateTweetWithImage(tweetId: string, imageUrl: string) {
+    // This would need to be implemented to update the tweet in the UI
+    // For now, just log it
+    console.log(`🖼️ Would update tweet ${tweetId} with image: ${imageUrl}`);
   }
 }
 
