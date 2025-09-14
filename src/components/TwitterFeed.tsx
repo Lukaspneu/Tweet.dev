@@ -78,6 +78,14 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       fullTweet: webhookTweet
     });
     
+    // CRITICAL UI DEBUG: Check if image will be displayed
+    if (webhookTweet.imageUrl) {
+      console.log('✅ UI: IMAGE URL PRESENT - WILL DISPLAY:', webhookTweet.imageUrl);
+    } else {
+      console.log('❌ UI: NO IMAGE URL - WILL NOT DISPLAY IMAGE');
+      console.log('❌ UI: Full webhookTweet object:', JSON.stringify(webhookTweet, null, 2));
+    }
+    
     const now = Date.now() // Get exact current time
     const tweet: Tweet = {
       ...webhookTweet,
@@ -317,6 +325,13 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                     )}
                       
                       {/* Image Media - Enhanced with debugging */}
+                      {(() => {
+                        console.log('🎯 CHECKING IMAGE DISPLAY FOR TWEET:', tweet.id);
+                        console.log('🎯 tweet.imageUrl:', tweet.imageUrl);
+                        console.log('🎯 tweet.videoUrl:', tweet.videoUrl);
+                        console.log('🎯 Will show image?', !!(tweet.imageUrl && !tweet.videoUrl));
+                        return null;
+                      })()}
                       {tweet.imageUrl && !tweet.videoUrl && (
                         <div className="px-0 pt-2">
                           <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">

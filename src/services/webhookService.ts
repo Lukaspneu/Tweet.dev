@@ -783,9 +783,13 @@ class WebhookService {
       // CRITICAL DEBUG: Check if imageUrl is actually set
       if (tweet.imageUrl) {
         console.log('✅ IMAGE URL IS SET IN TWEET:', tweet.imageUrl);
+        console.log('🎯 IMAGE WILL BE DISPLAYED IN UI');
       } else {
         console.log('❌ NO IMAGE URL IN TWEET! Available fields:', Object.keys(tweet));
         console.log('❌ Tweet object:', JSON.stringify(tweet, null, 2));
+        console.log('❌ Raw tweetData that was processed:', JSON.stringify(tweetData, null, 2));
+        console.log('❌ uniqueImageUrls that were found:', uniqueImageUrls);
+        console.log('❌ primaryImageUrl that was set:', primaryImageUrl);
       }
 
       // Validate required fields
