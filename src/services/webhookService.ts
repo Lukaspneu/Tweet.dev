@@ -93,7 +93,7 @@ class WebhookService {
           // Only process the latest 50 tweets to prevent lag
           const tweetsToProcess = sortedTweets.slice(0, 50)
           
-          console.log('📊 Processing tweets in order:', tweetsToProcess.slice(0, 3).map(t => ({
+          console.log('📊 Processing tweets in order:', tweetsToProcess.slice(0, 3).map((t: any) => ({
             id: t.id,
             timestamp: t.timestamp || t.receivedAt,
             username: t.username
