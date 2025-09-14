@@ -152,15 +152,41 @@ class WebhookService {
       console.log('🔍 STEP 4: RAW TWEET DATA BEING PROCESSED:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
       
-      // BRUTE FORCE EXTRACTION - FIND ANY MEDIA IN THE PAYLOAD
+      // EXTRACT MEDIA FROM EXACT STRUCTURE
       const allImageUrls: string[] = [];
       const allVideoUrls: string[] = [];
       
-      // Search the ENTIRE payload for ANY media URLs
+      // 1. Extract from embeds[].image.url structure (the main one)
+      if (tweetData.embeds && Array.isArray(tweetData.embeds)) {
+        console.log('🔍 PROCESSING EMBEDS ARRAY:', tweetData.embeds);
+        tweetData.embeds.forEach((embed: any, index: number) => {
+          console.log(`🔍 Processing embed ${index}:`, embed);
+          
+          // Check for image in embed
+          if (embed.image?.url) {
+            console.log(`🖼️ FOUND IMAGE in embeds[${index}].image.url:`, embed.image.url);
+            allImageUrls.push(embed.image.url);
+          }
+          
+          // Check for video in embed
+          if (embed.video?.url) {
+            console.log(`🎥 FOUND VIDEO in embeds[${index}].video.url:`, embed.video.url);
+            allVideoUrls.push(embed.video.url);
+          }
+          
+          // Check for thumbnail in embed
+          if (embed.thumbnail?.url) {
+            console.log(`🖼️ FOUND THUMBNAIL in embeds[${index}].thumbnail.url:`, embed.thumbnail.url);
+            allImageUrls.push(embed.thumbnail.url);
+          }
+        });
+      }
+      
+      // 2. Fallback: Search the ENTIRE payload for ANY media URLs
       const searchForMedia = (obj: any, path = ''): void => {
         if (typeof obj === 'string') {
           // Check for image URLs
-          if (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i)) {
+          if (obj.includes('pbs.twimg.com') && obj.includes('media')) {
             if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner') && !obj.includes('header')) {
               console.log(`🖼️ FOUND IMAGE URL at ${path}:`, obj);
               allImageUrls.push(obj);
@@ -172,17 +198,6 @@ class WebhookService {
             console.log(`🎥 FOUND VIDEO URL at ${path}:`, obj);
             allVideoUrls.push(obj);
           }
-          
-          // Check for any http URLs that might be media
-          if (obj.includes('http') && (obj.includes('twimg') || obj.includes('media') || obj.includes('video'))) {
-            console.log(`🔍 FOUND POTENTIAL MEDIA URL at ${path}:`, obj);
-            if (obj.includes('pbs.twimg.com') && !allImageUrls.includes(obj)) {
-              allImageUrls.push(obj);
-            }
-            if (obj.includes('video.twimg.com') && !allVideoUrls.includes(obj)) {
-              allVideoUrls.push(obj);
-            }
-          }
         } else if (typeof obj === 'object' && obj !== null) {
           Object.keys(obj).forEach(key => {
             searchForMedia(obj[key], path ? `${path}.${key}` : key);
@@ -190,7 +205,7 @@ class WebhookService {
         }
       };
       
-      console.log('🔍 BRUTE FORCE SEARCHING ENTIRE PAYLOAD FOR MEDIA...');
+      console.log('🔍 FALLBACK SEARCHING ENTIRE PAYLOAD FOR MEDIA...');
       searchForMedia(tweetData);
       
       // Remove duplicates
