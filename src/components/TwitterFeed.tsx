@@ -68,7 +68,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {
     const tweet: Tweet = {
       ...webhookTweet,
-      timestamp: currentTime // Use current time so it starts at "0s ago"
+      timestamp: webhookTweet.timestamp ? new Date(webhookTweet.timestamp).getTime() : Date.now()
     }
     
     setTweets(prevTweets => {
@@ -83,7 +83,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       
       return newTweets
     })
-  }, [maxTweets, currentTime])
+  }, [maxTweets])
 
   const handleError = useCallback((error: string) => {
     console.error('Webhook error:', error)
