@@ -21,6 +21,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
   const [webhookService, setWebhookService] = useState<WebhookService | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [displayLimit, setDisplayLimit] = useState(10) // Start with 10 tweets
+  const [maxTweets] = useState(50) // Maximum tweets to prevent lag
 
   const handleDeployClick = () => {
     if (onLaunchModalOpen) {
@@ -54,6 +56,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp (newest first)
+    .slice(0, displayLimit) // Limit display to prevent lag
 
   // Webhook service callbacks
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {
@@ -67,10 +70,14 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       const exists = prevTweets.some(t => t.id === tweet.id)
       if (exists) return prevTweets
       
-      // Add new tweet at the beginning and keep only latest 100
-      return [tweet, ...prevTweets.slice(0, 99)]
+      // Add new tweet and sort by timestamp (newest first)
+      const newTweets = [tweet, ...prevTweets]
+        .sort((a, b) => b.timestamp - a.timestamp) // Newest first
+        .slice(0, maxTweets) // Keep only the latest maxTweets
+      
+      return newTweets
     })
-  }, [])
+  }, [maxTweets])
 
   const handleError = useCallback((error: string) => {
     setErrorMessage(error)
@@ -109,6 +116,14 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
 
   const clearTweets = () => {
     setTweets([])
+  }
+
+  const loadMoreTweets = () => {
+    setDisplayLimit(prev => Math.min(prev + 20, maxTweets)) // Load 20 more, up to maxTweets
+  }
+
+  const resetDisplayLimit = () => {
+    setDisplayLimit(10) // Reset to initial 10 tweets
   }
 
   // const handleTweetHover = () => {
@@ -464,6 +479,38 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                 </div>
               </div>
             ))}
+            
+            {/* Load More Button */}
+            {tweets.length > displayLimit && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={loadMoreTweets}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(185, 255, 93)',
+                    color: 'rgb(0,0,0)'
+                  }}
+                >
+                  Load More ({Math.min(displayLimit + 20, maxTweets) - displayLimit} more)
+                </button>
+              </div>
+            )}
+            
+            {/* Reset Button */}
+            {displayLimit > 10 && (
+              <div className="flex justify-center pb-4">
+                <button
+                  onClick={resetDisplayLimit}
+                  className="px-3 py-1 rounded text-xs font-medium transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(80,80,80)',
+                    color: 'rgb(192,192,192)'
+                  }}
+                >
+                  Show Latest 10 Only
+                </button>
+              </div>
+            )}
         </div>
         )}
       </div>
