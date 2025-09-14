@@ -131,11 +131,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
 
   // Initialize webhook service
   useEffect(() => {
-    const service = new WebhookService({
-      onNewTweet: handleNewTweet,
-      onError: handleError,
-      onStatusChange: handleStatusChange
-    })
+    const service = new WebhookService()
+    service.setOnNewTweet(handleNewTweet)
     
     service.startPolling()
 
@@ -296,63 +293,72 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                           <span>{tweet.text}</span>
                         </div>
                       </div>
-                      {/* Video Media */}
-                      {tweet.videoUrl && (
-                        <div className="px-0 pt-2">
-                          <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full overflow-hidden">
-                            <div className="relative group w-full h-full flex items-center justify-center">
-                              <video 
-                                src={tweet.videoUrl} 
-                                poster={tweet.videoPoster || tweet.imageUrl}
-                                controls 
-                                preload="metadata" 
-                                className="object-contain max-w-full max-h-[400px] w-full rounded-lg"
-                                style={{ maxHeight: '400px' }}
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                              <button type="button" className="absolute top-2 right-2 bg-black/60 rounded-full p-1 transition-opacity duration-200 opacity-70 hover:opacity-100" aria-label="Expand video">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize w-6 h-6 text-white drop-shadow p-1" aria-hidden="true">
-                                  <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-                                  <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
-                                  <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
-                                  <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-                                </svg>
-                              </button>
+                      {/* Video Media - Enhanced with raw payload support */}
+                      {(() => {
+                        // Check for videos in raw payload embeds
+                        const rawVideos = tweet.rawPayload?.embeds?.filter((embed: any) => embed.video?.url).map((embed: any) => embed.video.url) || [];
+                        const allVideos = [...(tweet.videoUrl ? [tweet.videoUrl] : []), ...rawVideos];
+                        
+                        return allVideos.map((videoUrl, index) => (
+                          <div key={index} className="px-0 pt-2">
+                            <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full overflow-hidden">
+                              <div className="relative group w-full h-full flex items-center justify-center">
+                                <video 
+                                  src={videoUrl} 
+                                  poster={tweet.videoPoster || tweet.imageUrl}
+                                  controls 
+                                  preload="metadata" 
+                                  className="object-contain max-w-full max-h-[400px] w-full rounded-lg"
+                                  style={{ maxHeight: '400px' }}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                                <button type="button" className="absolute top-2 right-2 bg-black/60 rounded-full p-1 transition-opacity duration-200 opacity-70 hover:opacity-100" aria-label="Expand video">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize w-6 h-6 text-white drop-shadow p-1" aria-hidden="true">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
                           </div>
-                      </div>
-                    )}
+                        ));
+                      })()}
                       
-                      {/* Image Media - Enhanced with debugging */}
+                      {/* Image Media - Enhanced with raw payload support */}
                       {(() => {
+                        // Check for images in raw payload embeds
+                        const rawImages = tweet.rawPayload?.embeds?.filter((embed: any) => embed.image?.url).map((embed: any) => embed.image.url) || [];
+                        const allImages = [...(tweet.imageUrl ? [tweet.imageUrl] : []), ...rawImages];
+                        
                         console.log('🎯 CHECKING IMAGE DISPLAY FOR TWEET:', tweet.id);
                         console.log('🎯 tweet.imageUrl:', tweet.imageUrl);
-                        console.log('🎯 tweet.videoUrl:', tweet.videoUrl);
-                        console.log('🎯 Will show image?', !!(tweet.imageUrl && !tweet.videoUrl));
-                        return null;
-                      })()}
-                      {tweet.imageUrl && !tweet.videoUrl && (
-                        <div className="px-0 pt-2">
-                          <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
-                            <img 
-                              alt="Tweet image" 
-                              className="w-full max-h-[400px] object-contain rounded-lg" 
-                              src={tweet.imageUrl}
-                              onError={(e) => {
-                                console.error('❌ Image failed to load:', tweet.imageUrl);
-                                const target = e.target as HTMLImageElement;
-                                target.style.border = '2px solid red';
-                                target.alt = 'Image failed to load';
-                                target.style.display = 'block';
-                              }}
-                              onLoad={() => {
-                                console.log('✅ Image loaded successfully:', tweet.imageUrl);
-                              }}
-                            />
+                        console.log('🎯 rawImages:', rawImages);
+                        console.log('🎯 allImages:', allImages);
+                        
+                        return allImages.map((imageUrl, index) => (
+                          <div key={index} className="px-0 pt-2">
+                            <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
+                              <img 
+                                alt="Tweet image" 
+                                className="w-full max-h-[400px] object-contain rounded-lg" 
+                                src={imageUrl}
+                                onError={(e) => {
+                                  console.error('❌ Image failed to load:', imageUrl);
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.border = '2px solid red';
+                                  target.alt = 'Image failed to load';
+                                }}
+                                onLoad={() => {
+                                  console.log('✅ Image loaded successfully:', imageUrl);
+                                }}
+                              />
+                            </div>
                           </div>
-                      </div>
-                    )}
+                        ));
+                      })()}
 
                       {/* FALLBACK: Display ANY image URLs found */}
                       {!tweet.imageUrl && !tweet.videoUrl && (
@@ -447,6 +453,25 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                         </div>
                         );
                       })()}
+                      
+                      {/* RAW PAYLOAD DISPLAY - Beautiful JSON viewer */}
+                      {tweet.rawPayload && (
+                        <div className="px-0 pt-4">
+                          <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 overflow-hidden">
+                            <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-700/50">
+                              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                Raw Webhook Payload
+                              </h4>
+                            </div>
+                            <div className="p-4">
+                              <pre className="text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
+                                {JSON.stringify(tweet.rawPayload, null, 2)}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
