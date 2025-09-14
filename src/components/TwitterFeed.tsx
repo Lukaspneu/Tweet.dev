@@ -335,8 +335,54 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                         
                         console.log('🎯 CHECKING IMAGE DISPLAY FOR TWEET:', tweet.id);
                         console.log('🎯 tweet.imageUrl:', tweet.imageUrl);
+                        console.log('🎯 tweet.rawPayload?.embeds:', tweet.rawPayload?.embeds);
                         console.log('🎯 rawImages:', rawImages);
                         console.log('🎯 allImages:', allImages);
+                        console.log('🎯 Will render images?', allImages.length > 0);
+                        
+                        // If no images found, let's search the entire raw payload
+                        if (allImages.length === 0 && tweet.rawPayload) {
+                          console.log('🔍 NO IMAGES FOUND - SEARCHING ENTIRE RAW PAYLOAD...');
+                          const searchForImages = (obj: any, path = ''): string[] => {
+                            const found: string[] = [];
+                            if (typeof obj === 'string' && obj.includes('http') && obj.includes('pbs.twimg.com')) {
+                              if (!obj.includes('profile') && !obj.includes('avatar') && obj.includes('media')) {
+                                found.push(obj);
+                                console.log(`🖼️ Found image URL at ${path}:`, obj);
+                              }
+                            }
+                            if (typeof obj === 'object' && obj !== null) {
+                              Object.keys(obj).forEach(key => {
+                                found.push(...searchForImages(obj[key], path ? `${path}.${key}` : key));
+                              });
+                            }
+                            return found;
+                          };
+                          const foundImages = searchForImages(tweet.rawPayload);
+                          console.log('🔍 Found images in raw payload:', foundImages);
+                          if (foundImages.length > 0) {
+                            return foundImages.map((imageUrl, index) => (
+                              <div key={index} className="px-0 pt-2">
+                                <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
+                                  <img 
+                                    alt="Tweet image (found in raw payload)" 
+                                    className="w-full max-h-[400px] object-contain rounded-lg" 
+                                    src={imageUrl}
+                                    onError={(e) => {
+                                      console.error('❌ Raw payload image failed to load:', imageUrl);
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.border = '2px solid red';
+                                      target.alt = 'Image failed to load';
+                                    }}
+                                    onLoad={() => {
+                                      console.log('✅ Raw payload image loaded successfully:', imageUrl);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ));
+                          }
+                        }
                         
                         return allImages.map((imageUrl, index) => (
                           <div key={index} className="px-0 pt-2">
