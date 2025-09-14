@@ -12,6 +12,15 @@ export interface WebhookTweet {
   videoPoster?: string
   followerCount?: string
   source?: string
+  embeds?: Array<{
+    type: string
+    url?: string
+    imageUrl?: string
+    videoUrl?: string
+    thumbnailUrl?: string
+    title?: string
+    description?: string
+  }>
 }
 
 export interface WebhookServiceCallbacks {
@@ -615,6 +624,19 @@ class WebhookService {
       }
       
       // Transform webhook data to our tweet format
+      // Extract embeds data from webhook payload
+      const extension = tweetData.extension || {};
+      const embeds = tweetData.embeds || extension.embeds || [];
+      const processedEmbeds = embeds.map((embed: any) => ({
+        type: embed.type || 'unknown',
+        url: embed.url,
+        imageUrl: embed.imageUrl || embed.thumbnailUrl,
+        videoUrl: embed.videoUrl,
+        thumbnailUrl: embed.thumbnailUrl,
+        title: embed.title,
+        description: embed.description
+      })).filter((embed: any) => embed.imageUrl || embed.videoUrl); // Only include embeds with media
+
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         username: username,
@@ -627,7 +649,8 @@ class WebhookService {
         videoUrl: videoUrl,
         videoPoster: videoPoster,
         followerCount: followerCount,
-        source: 'webhook'
+        source: 'webhook',
+        embeds: processedEmbeds.length > 0 ? processedEmbeds : undefined
       }
 
       // DEBUG: Log final tweet data to see what we're sending to the UI

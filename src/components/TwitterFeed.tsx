@@ -312,6 +312,52 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                           </div>
                       </div>
                     )}
+
+                      {/* Embeds Media */}
+                      {tweet.embeds && tweet.embeds.length > 0 && (
+                        <div className="px-0 pt-2 space-y-2">
+                          {tweet.embeds.map((embed, index) => (
+                            <div key={index} className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
+                              {embed.imageUrl && (
+                                <img 
+                                  alt={embed.title || "Embedded image"} 
+                                  className="w-full max-h-[400px] object-contain rounded-lg" 
+                                  src={embed.imageUrl}
+                                  onError={(e) => {
+                                    console.log('🖼️ Embed image failed to load:', embed.imageUrl);
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                  onLoad={() => {
+                                    console.log('🖼️ Embed image loaded successfully:', embed.imageUrl);
+                                  }}
+                                />
+                              )}
+                              {embed.videoUrl && !embed.imageUrl && (
+                                <div className="relative group w-full h-full flex items-center justify-center">
+                                  <video 
+                                    src={embed.videoUrl} 
+                                    poster={embed.thumbnailUrl}
+                                    controls 
+                                    preload="metadata" 
+                                    className="object-contain max-w-full max-h-[400px] w-full rounded-lg"
+                                    style={{ maxHeight: '400px' }}
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                </div>
+                              )}
+                              {embed.title && (
+                                <div className="p-3 bg-gray-800/50">
+                                  <h4 className="text-sm font-semibold text-white mb-1">{embed.title}</h4>
+                                  {embed.description && (
+                                    <p className="text-xs text-gray-300">{embed.description}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
