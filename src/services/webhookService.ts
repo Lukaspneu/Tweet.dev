@@ -152,8 +152,33 @@ class WebhookService {
       console.log('🔍 STEP 4: RAW TWEET DATA BEING PROCESSED:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
       
-      // DIRECT SEARCH FOR ANY IMAGE URLS
+      // EXTRACT MEDIA FROM SPECIFIC STRUCTURES
       const allImageUrls: string[] = [];
+      const allVideoUrls: string[] = [];
+      
+      // 1. Extract images from image.url structure
+      if (tweetData.image?.url) {
+        console.log('🖼️ FOUND IMAGE in image.url:', tweetData.image.url);
+        allImageUrls.push(tweetData.image.url);
+      }
+      
+      // 2. Extract videos from content field (video.twimg.com)
+      if (tweetData.content && typeof tweetData.content === 'string') {
+        const videoMatches = tweetData.content.match(/https:\/\/video\.twimg\.com\/[^\s)]+/g);
+        if (videoMatches) {
+          console.log('🎥 FOUND VIDEOS in content:', videoMatches);
+          allVideoUrls.push(...videoMatches);
+        }
+        
+        // Also check for any other video URLs
+        const otherVideoMatches = tweetData.content.match(/https:\/\/[^\s)]*\.(mp4|webm|mov|avi)/gi);
+        if (otherVideoMatches) {
+          console.log('🎥 FOUND OTHER VIDEOS in content:', otherVideoMatches);
+          allVideoUrls.push(...otherVideoMatches);
+        }
+      }
+      
+      // 3. Fallback: Search for any image URLs in the payload
       const findImageUrls = (obj: any, path = ''): void => {
         if (typeof obj === 'string' && obj.includes('http')) {
           if (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
@@ -171,6 +196,7 @@ class WebhookService {
       
       findImageUrls(tweetData);
       console.log('🎯 ALL FOUND IMAGE URLS:', allImageUrls);
+      console.log('🎯 ALL FOUND VIDEO URLS:', allVideoUrls);
 
       // Deep analysis of all objects
       Object.keys(tweetData).forEach(key => {
@@ -650,17 +676,40 @@ class WebhookService {
       }
       
       // Transform webhook data to our tweet format
-      // SIMPLE APPROACH: Create embeds directly from found image URLs
+      // CREATE EMBEDS FROM FOUND MEDIA
       
-      // Create embeds from the image URLs we found
-      const processedEmbeds = allImageUrls.map(url => ({
+      // Create embeds from found images
+      const imageEmbeds = allImageUrls.map(url => ({
         type: 'photo',
         imageUrl: url,
         title: 'Tweet Image',
         description: ''
       }));
       
-      console.log('🎯 CREATED EMBEDS FROM IMAGE URLS:', processedEmbeds);
+      // Create embeds from found videos
+      const videoEmbeds = allVideoUrls.map(url => ({
+        type: 'video',
+        videoUrl: url,
+        title: 'Tweet Video',
+        description: ''
+      }));
+      
+      const processedEmbeds = [...imageEmbeds, ...videoEmbeds];
+      
+      console.log('🎯 CREATED IMAGE EMBEDS:', imageEmbeds);
+      console.log('🎯 CREATED VIDEO EMBEDS:', videoEmbeds);
+      console.log('🎯 TOTAL PROCESSED EMBEDS:', processedEmbeds);
+
+      // Set primary image and video URLs from found media
+      const primaryImageUrl = allImageUrls.length > 0 ? allImageUrls[0] : imageUrl;
+      const primaryVideoUrl = allVideoUrls.length > 0 ? allVideoUrls[0] : videoUrl;
+      
+      console.log('🎯 SETTING PRIMARY MEDIA URLs:', {
+        primaryImageUrl,
+        primaryVideoUrl,
+        foundImages: allImageUrls.length,
+        foundVideos: allVideoUrls.length
+      });
 
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -670,8 +719,8 @@ class WebhookService {
         timestamp: timestamp,
         profileImage: profileImage,
         url: tweetUrl,
-        imageUrl: imageUrl,
-        videoUrl: videoUrl,
+        imageUrl: primaryImageUrl,
+        videoUrl: primaryVideoUrl,
         videoPoster: videoPoster,
         followerCount: followerCount,
         source: 'webhook',
