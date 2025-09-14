@@ -321,6 +321,51 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                       </div>
                     )}
 
+                      {/* FALLBACK: Display ANY image URLs found */}
+                      {!tweet.imageUrl && !tweet.videoUrl && (
+                        <div className="px-0 pt-2 space-y-2">
+                          {(() => {
+                            // Find any image URLs in the tweet data
+                            const findImageUrls = (obj: any): string[] => {
+                              if (typeof obj === 'string' && obj.includes('http') && 
+                                  (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp)/i))) {
+                                if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner')) {
+                                  return [obj];
+                                }
+                              }
+                              if (typeof obj === 'object' && obj !== null) {
+                                const urls: string[] = [];
+                                Object.keys(obj).forEach(key => {
+                                  urls.push(...findImageUrls(obj[key]));
+                                });
+                                return urls;
+                              }
+                              return [];
+                            };
+                            
+                            const imageUrls = findImageUrls(tweet);
+                            console.log('🎯 FOUND IMAGE URLS IN TWEET:', imageUrls);
+                            
+                            return imageUrls.map((url, index) => (
+                              <div key={index} className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
+                                <img 
+                                  alt="Tweet image" 
+                                  className="w-full max-h-[400px] object-contain rounded-lg" 
+                                  src={url}
+                                  onError={(e) => {
+                                    console.error('❌ Fallback image failed to load:', url);
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                  onLoad={() => {
+                                    console.log('✅ Fallback image loaded successfully:', url);
+                                  }}
+                                />
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
+
                       {/* Embeds Media */}
                       {tweet.embeds && tweet.embeds.length > 0 && (() => {
                         console.log('🎯 RENDERING EMBEDS:', tweet.embeds);

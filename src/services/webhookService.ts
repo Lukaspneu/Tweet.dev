@@ -140,24 +140,30 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
-      // 🔍 COMPREHENSIVE WEBHOOK DATA ANALYSIS
+      // 🔍 SIMPLE DIRECT APPROACH - FIND ALL IMAGES
       console.log('='.repeat(80));
-      console.log('🔍 COMPLETE WEBHOOK DATA ANALYSIS');
+      console.log('🔍 RAW WEBHOOK PAYLOAD:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
-      console.log('📋 Top-level fields:', Object.keys(tweetData));
       
-      // SPECIFIC EMBED SEARCH
-      console.log('🎯 SPECIFIC EMBED SEARCH:');
-      console.log('🔍 tweetData.embeds:', tweetData.embeds);
-      console.log('🔍 tweetData.extension:', tweetData.extension);
-      console.log('🔍 tweetData.extension?.embeds:', tweetData.extension?.embeds);
-      console.log('🔍 tweetData.media:', tweetData.media);
-      console.log('🔍 tweetData.attachments:', tweetData.attachments);
-      console.log('🔍 tweetData.entities:', tweetData.entities);
-      console.log('🔍 tweetData.entities?.media:', tweetData.entities?.media);
-      console.log('🔍 tweetData.attachments?.media_keys:', tweetData.attachments?.media_keys);
-      console.log('🔍 tweetData.includes:', tweetData.includes);
-      console.log('🔍 tweetData.includes?.media:', tweetData.includes?.media);
+      // DIRECT SEARCH FOR ANY IMAGE URLS
+      const allImageUrls: string[] = [];
+      const findImageUrls = (obj: any, path = ''): void => {
+        if (typeof obj === 'string' && obj.includes('http')) {
+          if (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+            if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner')) {
+              console.log(`🖼️ FOUND IMAGE URL at ${path}:`, obj);
+              allImageUrls.push(obj);
+            }
+          }
+        } else if (typeof obj === 'object' && obj !== null) {
+          Object.keys(obj).forEach(key => {
+            findImageUrls(obj[key], path ? `${path}.${key}` : key);
+          });
+        }
+      };
+      
+      findImageUrls(tweetData);
+      console.log('🎯 ALL FOUND IMAGE URLS:', allImageUrls);
 
       // Deep analysis of all objects
       Object.keys(tweetData).forEach(key => {
@@ -637,167 +643,17 @@ class WebhookService {
       }
       
       // Transform webhook data to our tweet format
-      // Extract embeds data from webhook payload - check multiple locations
-      const extension = tweetData.extension || {};
-      let embeds = tweetData.embeds || extension.embeds || [];
+      // SIMPLE APPROACH: Create embeds directly from found image URLs
       
-      // TWITTER API V2 MEDIA CHECK
-      console.log('🎯 CHECKING TWITTER API V2 MEDIA STRUCTURE:');
+      // Create embeds from the image URLs we found
+      const processedEmbeds = allImageUrls.map(url => ({
+        type: 'photo',
+        imageUrl: url,
+        title: 'Tweet Image',
+        description: ''
+      }));
       
-      // Check for attachments.media_keys and includes.media (Twitter API v2)
-      if (tweetData.attachments?.media_keys && tweetData.includes?.media) {
-        console.log('🎯 Found Twitter API v2 media structure!');
-        console.log('🔍 Media keys:', tweetData.attachments.media_keys);
-        console.log('🔍 Includes media:', tweetData.includes.media);
-        
-        const mediaFromIncludes = tweetData.includes.media.map((media: any) => ({
-          type: media.type || 'unknown',
-          url: media.url,
-          imageUrl: media.url || media.preview_image_url,
-          videoUrl: media.type === 'video' ? media.url : undefined,
-          thumbnailUrl: media.preview_image_url,
-          title: `Media ${media.type}`,
-          description: media.alt_text || ''
-        }));
-        
-        embeds = embeds.concat(mediaFromIncludes);
-        console.log('🎯 Added media from includes:', mediaFromIncludes);
-      }
-      
-      // Check for entities.media (Twitter API v1)
-      if (tweetData.entities?.media) {
-        console.log('🎯 Found Twitter API v1 entities.media!');
-        console.log('🔍 Entities media:', tweetData.entities.media);
-        
-        const mediaFromEntities = tweetData.entities.media.map((media: any) => ({
-          type: media.type || 'photo',
-          url: media.url,
-          imageUrl: media.media_url_https || media.media_url,
-          videoUrl: media.type === 'video' ? media.media_url_https : undefined,
-          thumbnailUrl: media.media_url_https,
-          title: `Media ${media.type}`,
-          description: media.alt_text || ''
-        }));
-        
-        embeds = embeds.concat(mediaFromEntities);
-        console.log('🎯 Added media from entities:', mediaFromEntities);
-      }
-      
-      // FALLBACK: Search for embeds in other possible locations
-      if (embeds.length === 0) {
-        console.log('🔍 No embeds found in standard locations, searching deeper...');
-        
-        // Check for embeds in nested objects
-        const searchForEmbeds = (obj: any, path = ''): any[] => {
-          if (!obj || typeof obj !== 'object') return [];
-          
-          let foundEmbeds: any[] = [];
-          
-          // Check if this object looks like an embed
-          if (obj.type && (obj.imageUrl || obj.videoUrl || obj.thumbnailUrl || obj.url || obj.media_url)) {
-            console.log(`🎯 Found potential embed at ${path}:`, obj);
-            foundEmbeds.push(obj);
-          }
-          
-          // Check for Twitter API v2 media structure
-          if (obj.type === 'photo' || obj.type === 'video' || obj.type === 'animated_gif') {
-            console.log(`🎯 Found Twitter media at ${path}:`, obj);
-            foundEmbeds.push(obj);
-          }
-          
-          // Recursively search nested objects
-          Object.keys(obj).forEach(key => {
-            const keyLower = key.toLowerCase();
-            if (keyLower.includes('embed') || keyLower.includes('media') || keyLower.includes('attachment') || 
-                keyLower.includes('photo') || keyLower.includes('video') || keyLower.includes('image')) {
-              console.log(`🔍 Checking ${path}.${key} for embeds...`);
-              if (Array.isArray(obj[key])) {
-                console.log(`📦 Found array at ${path}.${key}:`, obj[key]);
-                foundEmbeds = foundEmbeds.concat(obj[key]);
-              } else if (obj[key] && typeof obj[key] === 'object') {
-                foundEmbeds = foundEmbeds.concat(searchForEmbeds(obj[key], `${path}.${key}`));
-              }
-            }
-          });
-          
-          return foundEmbeds;
-        };
-        
-        const foundEmbeds = searchForEmbeds(tweetData);
-        if (foundEmbeds.length > 0) {
-          embeds = foundEmbeds;
-          console.log('🎯 Found embeds in deep search:', embeds);
-        }
-      }
-      
-      // DEBUG: Log embeds data
-      console.log('🔍 EMBEDS DEBUG:');
-      console.log('📦 Raw embeds from tweetData.embeds:', tweetData.embeds);
-      console.log('📦 Raw embeds from extension.embeds:', extension.embeds);
-      console.log('📦 Final embeds array:', embeds);
-      console.log('📦 Embeds length:', embeds.length);
-      
-      const processedEmbeds = embeds.map((embed: any) => {
-        console.log('🔍 Processing embed:', embed);
-        const processed = {
-          type: embed.type || 'unknown',
-          url: embed.url,
-          imageUrl: embed.imageUrl || embed.thumbnailUrl,
-          videoUrl: embed.videoUrl,
-          thumbnailUrl: embed.thumbnailUrl,
-          title: embed.title,
-          description: embed.description
-        };
-        console.log('✅ Processed embed:', processed);
-        return processed;
-      }).filter((embed: any) => {
-        const hasMedia = embed.imageUrl || embed.videoUrl;
-        console.log(`🔍 Embed has media: ${hasMedia}`, embed);
-        return hasMedia;
-      }); // Only include embeds with media
-      
-      // AGGRESSIVE FALLBACK: If still no embeds, create embeds from any image URLs found
-      if (processedEmbeds.length === 0) {
-        console.log('🔍 No processed embeds found, creating embeds from image URLs...');
-        
-        // Search for any image URLs in the entire payload
-        const searchForImageUrls = (obj: any, path = ''): string[] => {
-          if (!obj || typeof obj !== 'object') return [];
-          
-          let imageUrls: string[] = [];
-          
-          Object.keys(obj).forEach(key => {
-            const value = obj[key];
-            
-            if (typeof value === 'string' && value.includes('http') && 
-                (value.includes('pbs.twimg.com') || value.includes('media') || value.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i))) {
-              // Filter out profile images but include media
-              if (!value.includes('profile_images') && !value.includes('_normal') && !value.includes('avatar') &&
-                  !value.includes('banner') && !value.includes('header')) {
-                console.log(`🎯 Found image URL at ${path}.${key}:`, value);
-                imageUrls.push(value);
-              }
-            } else if (typeof value === 'object' && value !== null) {
-              imageUrls = imageUrls.concat(searchForImageUrls(value, path ? `${path}.${key}` : key));
-            }
-          });
-          
-          return imageUrls;
-        };
-        
-        const foundImageUrls = searchForImageUrls(tweetData);
-        if (foundImageUrls.length > 0) {
-          console.log('🎯 Found image URLs, creating embeds:', foundImageUrls);
-          processedEmbeds.push(...foundImageUrls.map(url => ({
-            type: 'photo',
-            imageUrl: url,
-            title: 'Tweet Image',
-            description: ''
-          })));
-        }
-      }
-      
-      console.log('🎯 Final processed embeds:', processedEmbeds);
+      console.log('🎯 CREATED EMBEDS FROM IMAGE URLS:', processedEmbeds);
 
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
