@@ -420,42 +420,6 @@ class WebhookService {
       }
       
       // Transform webhook data to our tweet format
-      // CREATE EMBEDS FROM FOUND MEDIA
-      
-      // Create embeds from found images
-      const imageEmbeds = uniqueImageUrls.map(url => ({
-        type: 'photo',
-        imageUrl: url,
-        title: 'Tweet Image',
-        description: ''
-      }));
-      
-      // Create embeds from found videos
-      const videoEmbeds = uniqueVideoUrls.map(url => ({
-        type: 'video',
-        videoUrl: url,
-        title: 'Tweet Video',
-        description: ''
-      }));
-      
-      const processedEmbeds = [...imageEmbeds, ...videoEmbeds];
-      
-      console.log('🎯 CREATED IMAGE EMBEDS:', imageEmbeds);
-      console.log('🎯 CREATED VIDEO EMBEDS:', videoEmbeds);
-      console.log('🎯 TOTAL PROCESSED EMBEDS:', processedEmbeds);
-
-      // Primary media URLs already set above - use them
-      
-      console.log('🎯 SETTING PRIMARY MEDIA URLs:', {
-        primaryImageUrl,
-        primaryVideoUrl,
-        foundImages: uniqueImageUrls.length,
-        foundVideos: uniqueVideoUrls.length,
-        uniqueImageUrls: uniqueImageUrls,
-        uniqueVideoUrls: uniqueVideoUrls,
-        originalImageUrl: imageUrl,
-        originalVideoUrl: videoUrl
-      });
 
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -503,7 +467,6 @@ class WebhookService {
         console.log('❌ NO IMAGE URL IN TWEET! Available fields:', Object.keys(tweet));
         console.log('❌ Tweet object:', JSON.stringify(tweet, null, 2));
         console.log('❌ Raw tweetData that was processed:', JSON.stringify(tweetData, null, 2));
-        console.log('❌ uniqueImageUrls that were found:', uniqueImageUrls);
         console.log('❌ primaryImageUrl that was set:', primaryImageUrl);
       }
 
@@ -574,12 +537,6 @@ class WebhookService {
     this.startPolling()
   }
 
-  // Update tweet with image URL found via oEmbed
-  private updateTweetWithImage(tweetId: string, imageUrl: string) {
-    // This would need to be implemented to update the tweet in the UI
-    // For now, just log it
-    console.log(`🖼️ Would update tweet ${tweetId} with image: ${imageUrl}`);
-  }
 }
 
 export default WebhookService
