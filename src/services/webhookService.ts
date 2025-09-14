@@ -214,6 +214,17 @@ class WebhookService {
       
       console.log('🎯 UNIQUE IMAGE URLS FOUND:', uniqueImageUrls);
       console.log('🎯 UNIQUE VIDEO URLS FOUND:', uniqueVideoUrls);
+      
+      // IMMEDIATELY SET PRIMARY MEDIA - This is the key fix!
+      const primaryImageUrl = uniqueImageUrls.length > 0 ? uniqueImageUrls[0] : undefined;
+      const primaryVideoUrl = uniqueVideoUrls.length > 0 ? uniqueVideoUrls[0] : undefined;
+      
+      console.log('🎯 IMMEDIATE PRIMARY MEDIA SET:', {
+        primaryImageUrl,
+        primaryVideoUrl,
+        hasImage: !!primaryImageUrl,
+        hasVideo: !!primaryVideoUrl
+      });
 
       // Deep analysis of all objects
       Object.keys(tweetData).forEach(key => {
@@ -717,9 +728,7 @@ class WebhookService {
       console.log('🎯 CREATED VIDEO EMBEDS:', videoEmbeds);
       console.log('🎯 TOTAL PROCESSED EMBEDS:', processedEmbeds);
 
-      // Set primary image and video URLs from found media
-      const primaryImageUrl = uniqueImageUrls.length > 0 ? uniqueImageUrls[0] : imageUrl;
-      const primaryVideoUrl = uniqueVideoUrls.length > 0 ? uniqueVideoUrls[0] : videoUrl;
+      // Primary media URLs already set above - use them
       
       console.log('🎯 SETTING PRIMARY MEDIA URLs:', {
         primaryImageUrl,
@@ -747,6 +756,14 @@ class WebhookService {
         source: 'webhook',
         embeds: processedEmbeds.length > 0 ? processedEmbeds : undefined
       }
+      
+      // CRITICAL: Double-check that imageUrl is set
+      console.log('🔍 FINAL TWEET IMAGE CHECK:', {
+        tweetImageUrl: tweet.imageUrl,
+        primaryImageUrl: primaryImageUrl,
+        uniqueImageUrls: uniqueImageUrls,
+        isImageSet: !!tweet.imageUrl
+      });
 
       // 🔍 STEP 5: FINAL TWEET OBJECT BEING SENT TO UI
       console.log('🔍 STEP 5: FINAL TWEET OBJECT:');
