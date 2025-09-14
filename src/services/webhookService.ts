@@ -725,7 +725,11 @@ class WebhookService {
         primaryImageUrl,
         primaryVideoUrl,
         foundImages: uniqueImageUrls.length,
-        foundVideos: uniqueVideoUrls.length
+        foundVideos: uniqueVideoUrls.length,
+        uniqueImageUrls: uniqueImageUrls,
+        uniqueVideoUrls: uniqueVideoUrls,
+        originalImageUrl: imageUrl,
+        originalVideoUrl: videoUrl
       });
 
       const tweet: WebhookTweet = {
@@ -753,9 +757,19 @@ class WebhookService {
         embeds: tweet.embeds,
         embedsCount: tweet.embeds?.length || 0,
         imageUrl: tweet.imageUrl,
-        hasImageUrl: !!tweet.imageUrl
+        hasImageUrl: !!tweet.imageUrl,
+        videoUrl: tweet.videoUrl,
+        hasVideoUrl: !!tweet.videoUrl
       });
       console.log('📱 Full tweet object:', tweet);
+      
+      // CRITICAL DEBUG: Check if imageUrl is actually set
+      if (tweet.imageUrl) {
+        console.log('✅ IMAGE URL IS SET IN TWEET:', tweet.imageUrl);
+      } else {
+        console.log('❌ NO IMAGE URL IN TWEET! Available fields:', Object.keys(tweet));
+        console.log('❌ Tweet object:', JSON.stringify(tweet, null, 2));
+      }
 
       // Validate required fields
       if (!tweet.id || !tweet.text) {
