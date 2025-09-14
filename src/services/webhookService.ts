@@ -152,110 +152,59 @@ class WebhookService {
       console.log('🔍 STEP 4: RAW TWEET DATA BEING PROCESSED:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
       
-      // EXTRACT MEDIA FROM EXACT STRUCTURE
-      const allImageUrls: string[] = [];
-      const allVideoUrls: string[] = [];
+      // EXTRACT MEDIA DIRECTLY FROM EMBEDS STRUCTURE
+      let primaryImageUrl: string | undefined;
+      let primaryVideoUrl: string | undefined;
+      const processedEmbeds: any[] = [];
       
-      // 1. Extract from embeds[].image.url structure (the main one)
+      console.log('🔍 EXTRACTING FROM EMBEDS STRUCTURE...');
+      
       if (tweetData.embeds && Array.isArray(tweetData.embeds)) {
-        console.log('🔍 PROCESSING EMBEDS ARRAY:', tweetData.embeds);
+        console.log('🔍 Found embeds array with', tweetData.embeds.length, 'items');
+        
         tweetData.embeds.forEach((embed: any, index: number) => {
           console.log(`🔍 Processing embed ${index}:`, embed);
           
-          // Check for image in embed
-          if (embed.image?.url) {
-            console.log(`🖼️ FOUND IMAGE in embeds[${index}].image.url:`, embed.image.url);
-            allImageUrls.push(embed.image.url);
+          if (embed.image && embed.image.url) {
+            console.log(`✅ Found image in embed ${index}:`, embed.image.url);
+            
+            if (!primaryImageUrl) {
+              primaryImageUrl = embed.image.url;
+              console.log('🎯 Set as primary image:', primaryImageUrl);
+            }
+            
+            processedEmbeds.push({
+              type: 'image',
+              imageUrl: embed.image.url,
+              title: embed.author?.name || 'Image',
+              description: embed.description || ''
+            });
           }
           
-          // Check for video in embed
-          if (embed.video?.url) {
-            console.log(`🎥 FOUND VIDEO in embeds[${index}].video.url:`, embed.video.url);
-            allVideoUrls.push(embed.video.url);
-          }
-          
-          // Check for thumbnail in embed
-          if (embed.thumbnail?.url) {
-            console.log(`🖼️ FOUND THUMBNAIL in embeds[${index}].thumbnail.url:`, embed.thumbnail.url);
-            allImageUrls.push(embed.thumbnail.url);
+          if (embed.video && embed.video.url) {
+            console.log(`✅ Found video in embed ${index}:`, embed.video.url);
+            
+            if (!primaryVideoUrl) {
+              primaryVideoUrl = embed.video.url;
+              console.log('🎯 Set as primary video:', primaryVideoUrl);
+            }
+            
+            processedEmbeds.push({
+              type: 'video',
+              videoUrl: embed.video.url,
+              title: embed.author?.name || 'Video',
+              description: embed.description || ''
+            });
           }
         });
+      } else {
+        console.log('❌ No embeds found in tweetData');
       }
       
-      // 2. Fallback: Search the ENTIRE payload for ANY media URLs
-      const searchForMedia = (obj: any, path = ''): void => {
-        if (typeof obj === 'string') {
-          // Check for image URLs
-          if (obj.includes('pbs.twimg.com') && obj.includes('media')) {
-            if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner') && !obj.includes('header')) {
-              console.log(`🖼️ FOUND IMAGE URL at ${path}:`, obj);
-              allImageUrls.push(obj);
-            }
-          }
-          
-          // Check for video URLs
-          if (obj.includes('video.twimg.com') || obj.match(/\.(mp4|webm|mov|avi|mkv)/i)) {
-            console.log(`🎥 FOUND VIDEO URL at ${path}:`, obj);
-            allVideoUrls.push(obj);
-          }
-        } else if (typeof obj === 'object' && obj !== null) {
-          Object.keys(obj).forEach(key => {
-            searchForMedia(obj[key], path ? `${path}.${key}` : key);
-          });
-        }
-      };
+      console.log('🎯 Final primary image URL:', primaryImageUrl);
+      console.log('🎯 Final primary video URL:', primaryVideoUrl);
+      console.log('🎯 Final processed embeds:', processedEmbeds);
       
-      console.log('🔍 FALLBACK SEARCHING ENTIRE PAYLOAD FOR MEDIA...');
-      searchForMedia(tweetData);
-      
-      // Remove duplicates
-      const uniqueImageUrls = [...new Set(allImageUrls)];
-      const uniqueVideoUrls = [...new Set(allVideoUrls)];
-      
-      console.log('🎯 UNIQUE IMAGE URLS FOUND:', uniqueImageUrls);
-      console.log('🎯 UNIQUE VIDEO URLS FOUND:', uniqueVideoUrls);
-      
-      // IMMEDIATELY SET PRIMARY MEDIA - This is the key fix!
-      const primaryImageUrl = uniqueImageUrls.length > 0 ? uniqueImageUrls[0] : undefined;
-      const primaryVideoUrl = uniqueVideoUrls.length > 0 ? uniqueVideoUrls[0] : undefined;
-      
-      console.log('🎯 IMMEDIATE PRIMARY MEDIA SET:', {
-        primaryImageUrl,
-        primaryVideoUrl,
-        hasImage: !!primaryImageUrl,
-        hasVideo: !!primaryVideoUrl
-      });
-
-      // Deep analysis of all objects
-      Object.keys(tweetData).forEach(key => {
-        const value = tweetData[key];
-        if (typeof value === 'object' && value !== null) {
-          console.log(`📁 Nested object "${key}":`, Object.keys(value));
-          console.log(`📄 Content of "${key}":`, JSON.stringify(value, null, 2));
-        } else {
-          console.log(`📝 "${key}":`, value);
-        }
-      });
-
-      // Search for ANY URL containing image-like patterns
-      const searchForImages = (obj: any, path = '') => {
-        if (typeof obj === 'string' && obj.includes('http')) {
-          console.log(`🔗 URL found at ${path}:`, obj);
-          // Check if this URL could be an image
-          if (obj.includes('pbs.twimg.com') || obj.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i)) {
-            console.log(`🖼️ POTENTIAL IMAGE URL at ${path}:`, obj);
-          }
-        }
-        if (typeof obj === 'object' && obj !== null) {
-          Object.keys(obj).forEach(key => {
-            searchForImages(obj[key], path ? `${path}.${key}` : key);
-          });
-        }
-      };
-
-      console.log('🔍 Searching for ALL URLs in webhook data...');
-      searchForImages(tweetData);
-      console.log('='.repeat(80));
 
       // Handle both PostInfo/FeedPost structure and legacy structure
       let username, displayName, profileImage, cleanText, tweetUrl, followerCount, imageUrl, videoUrl, videoPoster, timestamp;
@@ -296,165 +245,14 @@ class WebhookService {
         tweetUrl = tweetData.url || `https://twitter.com/${username}/status/${tweetData.tweetId}`;
         followerCount = '1K'; // Default since not in PostInfo structure
         
-        // COMPREHENSIVE IMAGE EXTRACTION - Check ALL possible image fields
-        imageUrl = tweetData.imageUrl || 
-                  extension.imageUrl || 
-                  extension.tweet_image || 
-                  extension.media?.image || 
-                  extension.attachments?.image ||
-                  extension.entities?.media?.[0]?.media_url_https ||
-                  extension.entities?.media?.[0]?.media_url ||
-                  extension.media_url ||
-                  extension.media_url_https ||
-                  extension.image ||
-                  extension.photo ||
-                  extension.picture ||
-                  extension.thumbnail ||
-                  tweetData.media?.image ||
-                  tweetData.attachments?.image ||
-                  tweetData.entities?.media?.[0]?.media_url_https ||
-                  tweetData.entities?.media?.[0]?.media_url;
-        
-        // COMPREHENSIVE VIDEO EXTRACTION - Check ALL possible video fields
-        videoUrl = tweetData.videoUrl || 
-                  extension.videoUrl || 
-                  extension.tweet_video || 
-                  extension.media?.video ||
-                  extension.attachments?.video ||
-                  extension.entities?.media?.[0]?.video_info?.variants?.[0]?.url ||
-                  extension.video ||
-                  extension.mp4 ||
-                  extension.video_url ||
-                  tweetData.video ||
-                  tweetData.media?.video ||
-                  tweetData.attachments?.video;
-        
-        // COMPREHENSIVE VIDEO POSTER EXTRACTION - Check ALL possible poster fields
-        videoPoster = tweetData.videoPoster || 
-                     extension.videoPoster || 
-                     extension.video_thumbnail || 
-                     extension.media?.video_thumbnail ||
-                     extension.entities?.media?.[0]?.media_url_https ||
-                     extension.thumbnail ||
-                     extension.poster ||
-                     tweetData.video_thumbnail ||
-                     tweetData.media?.video_thumbnail;
+        // Use the media extracted from embeds structure
+        imageUrl = primaryImageUrl;
+        videoUrl = primaryVideoUrl;
+        videoPoster = undefined; // Will be set from embeds if needed
         
         timestamp = tweetData.receivedAt || Date.now();
         
-        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs (excluding profile pics)
-        if (!imageUrl) {
-          // Search in raw text
-          if (rawText) {
-            const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
-            if (imageUrlMatch) {
-              const foundUrl = imageUrlMatch[0];
-              // Filter out profile pictures - only use if it's NOT a profile image
-              if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar')) {
-                imageUrl = foundUrl;
-                console.log('🖼️ Image extracted from raw text (PostInfo):', imageUrl);
-              }
-            }
-          }
-
-          // TWITTER URL FALLBACK: Try multiple methods to get images
-          if (!imageUrl && tweetUrl) {
-            const tweetIdMatch = tweetUrl.match(/twitter\.com\/\w+\/status\/(\d+)/) || tweetUrl.match(/x\.com\/\w+\/status\/(\d+)/);
-            if (tweetIdMatch) {
-              console.log('🔄 Attempting to fetch image from tweet URL:', tweetUrl);
-              
-              // Method 1: Try Twitter oEmbed API
-              fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(tweetUrl)}&omit_script=true`)
-                .then(response => response.json())
-                .then(data => {
-                  if (data.html) {
-                    // Extract image from oEmbed HTML
-                    const imgMatch = data.html.match(/<img[^>]+src="([^"]+)"/);
-                    if (imgMatch && !imgMatch[1].includes('profile_images')) {
-                      console.log('🖼️ Image found via Twitter oEmbed:', imgMatch[1]);
-                      this.updateTweetWithImage(tweetData.id, imgMatch[1]);
-                    }
-                  }
-                })
-                .catch(err => console.log('oEmbed fetch failed:', err));
-
-              // Method 2: Try to fetch the tweet page and extract images
-              fetch(tweetUrl, { mode: 'no-cors' })
-                .then(() => {
-                  console.log('🔄 Tweet page fetch attempted (CORS limited)');
-                })
-                .catch(err => console.log('Tweet page fetch failed:', err));
-
-              // Method 3: Try Twitter API v2 (if we had access tokens)
-              // This would require authentication but could work
-              console.log('🔄 Could try Twitter API v2 with proper authentication');
-            }
-          }
-
-          // ULTIMATE FALLBACK: Try to construct Twitter media URLs from common patterns
-          if (!imageUrl) {
-            console.log('🔄 Attempting ultimate fallback - constructing potential media URLs...');
-            
-            // If we have any text that looks like it could be a media ID, try it
-            const textContent = JSON.stringify(tweetData);
-            const mediaIdMatch = textContent.match(/([A-Za-z0-9]{13,})/);
-            if (mediaIdMatch) {
-              const potentialId = mediaIdMatch[1];
-              console.log('🔄 Found potential media ID:', potentialId);
-              // Try constructing a URL with this ID
-              const constructedUrl = `https://pbs.twimg.com/media/${potentialId}?format=jpg&name=large`;
-              console.log('🔄 Constructed potential media URL:', constructedUrl);
-              // We could try to validate this URL, but for now just log it
-            }
-          }
-          
-          // Search in the entire tweetData object as JSON string
-          if (!imageUrl) {
-            const jsonString = JSON.stringify(tweetData);
-            const imageUrlMatches = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/gi);
-            if (imageUrlMatches) {
-              for (const foundUrl of imageUrlMatches) {
-                // Filter out profile pictures - only use if it's NOT a profile image
-                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar') && !foundUrl.includes('ui-avatars.com')) {
-                  imageUrl = foundUrl;
-                  console.log('🖼️ Image extracted from JSON string (PostInfo):', imageUrl);
-                  break;
-                }
-              }
-            }
-          }
-          
-          // Search for pbs.twimg.com URLs (Twitter's image CDN) - exclude profile images
-          if (!imageUrl) {
-            const twitterImageMatches = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/gi);
-            if (twitterImageMatches) {
-              for (const foundUrl of twitterImageMatches) {
-                // Filter out profile pictures - only use media images
-                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && foundUrl.includes('media')) {
-                  imageUrl = foundUrl;
-                  console.log('🖼️ Twitter CDN media image found (PostInfo):', imageUrl);
-                  break;
-                }
-              }
-            }
-          }
-
-          // SPECIFIC TWITTER MEDIA URL PATTERN: Look for the exact format you showed
-          if (!imageUrl) {
-            const twitterMediaPattern = /https?:\/\/pbs\.twimg\.com\/media\/[A-Za-z0-9]+(\?format=(jpg|jpeg|png|gif|webp)&name=(large|medium|small))?/gi;
-            const mediaMatches = rawText.match(twitterMediaPattern);
-            if (mediaMatches) {
-              // Use the first match and ensure it has the proper format
-              let foundUrl = mediaMatches[0];
-              // If it doesn't have format parameters, add them for best quality
-              if (!foundUrl.includes('format=')) {
-                foundUrl = foundUrl.split('?')[0] + '?format=jpg&name=large';
-              }
-              imageUrl = foundUrl;
-              console.log('🖼️ Twitter media URL found with exact pattern (PostInfo):', imageUrl);
-            }
-          }
-        }
+        console.log('🎯 Using media from embeds structure:', { imageUrl, videoUrl });
 
         // DEBUG: Log image extraction for PostInfo/FeedPost structure
         if (imageUrl) {
@@ -572,89 +370,7 @@ class WebhookService {
                      tweetData.media_thumbnail;
         timestamp = tweetData.timestamp ? new Date(tweetData.timestamp).getTime() : Date.now();
         
-        // ULTRA AGGRESSIVE FALLBACK: Search raw text for ANY image URLs (excluding profile pics)
-        if (!imageUrl) {
-          // Search in raw text
-          if (rawText) {
-            const imageUrlMatch = rawText.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i);
-            if (imageUrlMatch) {
-              const foundUrl = imageUrlMatch[0];
-              // Filter out profile pictures - only use if it's NOT a profile image
-              if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar')) {
-                imageUrl = foundUrl;
-                console.log('🖼️ Image extracted from raw text:', imageUrl);
-              }
-            }
-          }
-          
-          // Search in the entire tweetData object as JSON string
-          if (!imageUrl) {
-            const jsonString = JSON.stringify(tweetData);
-            const imageUrlMatches = jsonString.match(/https?:\/\/[^\s]*\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/gi);
-            if (imageUrlMatches) {
-              for (const foundUrl of imageUrlMatches) {
-                // Filter out profile pictures - only use if it's NOT a profile image
-                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && !foundUrl.includes('avatar') && !foundUrl.includes('ui-avatars.com')) {
-                  imageUrl = foundUrl;
-                  console.log('🖼️ Image extracted from JSON string:', imageUrl);
-                  break;
-                }
-              }
-            }
-          }
-          
-          // Search for pbs.twimg.com URLs (Twitter's image CDN) - exclude profile images
-          if (!imageUrl) {
-            const twitterImageMatches = rawText.match(/https?:\/\/pbs\.twimg\.com\/[^\s]+/gi);
-            if (twitterImageMatches) {
-              for (const foundUrl of twitterImageMatches) {
-                // Filter out profile pictures - only use media images
-                if (!foundUrl.includes('profile_images') && !foundUrl.includes('_normal') && foundUrl.includes('media')) {
-                  imageUrl = foundUrl;
-                  console.log('🖼️ Twitter CDN media image found:', imageUrl);
-                  break;
-                }
-              }
-            }
-          }
-
-          // SPECIFIC TWITTER MEDIA URL PATTERN: Look for the exact format you showed
-          if (!imageUrl) {
-            const twitterMediaPattern = /https?:\/\/pbs\.twimg\.com\/media\/[A-Za-z0-9]+(\?format=(jpg|jpeg|png|gif|webp)&name=(large|medium|small))?/gi;
-            const mediaMatches = rawText.match(twitterMediaPattern);
-            if (mediaMatches) {
-              // Use the first match and ensure it has the proper format
-              let foundUrl = mediaMatches[0];
-              // If it doesn't have format parameters, add them for best quality
-              if (!foundUrl.includes('format=')) {
-                foundUrl = foundUrl.split('?')[0] + '?format=jpg&name=large';
-              }
-              imageUrl = foundUrl;
-              console.log('🖼️ Twitter media URL found with exact pattern:', imageUrl);
-            }
-          }
-          
-          // Search for any URL that might be an image (excluding profile pics)
-          if (!imageUrl) {
-            const anyUrlMatch = rawText.match(/https?:\/\/[^\s]+/g);
-            if (anyUrlMatch) {
-              for (const url of anyUrlMatch) {
-                if ((url.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i) || 
-                    url.includes('pbs.twimg.com') || 
-                    url.includes('media') || 
-                    url.includes('image')) &&
-                    !url.includes('profile_images') && 
-                    !url.includes('_normal') && 
-                    !url.includes('avatar') &&
-                    !url.includes('ui-avatars.com')) {
-                  imageUrl = url;
-                  console.log('🖼️ Potential image URL found (filtered):', imageUrl);
-                  break;
-                }
-              }
-            }
-          }
-        }
+        console.log('🎯 Using media from embeds structure (legacy):', { imageUrl, videoUrl });
 
         // DEBUG: Log image extraction for legacy structure
         if (imageUrl) {
@@ -761,7 +477,6 @@ class WebhookService {
       console.log('🔍 FINAL TWEET IMAGE CHECK:', {
         tweetImageUrl: tweet.imageUrl,
         primaryImageUrl: primaryImageUrl,
-        uniqueImageUrls: uniqueImageUrls,
         isImageSet: !!tweet.imageUrl
       });
 
