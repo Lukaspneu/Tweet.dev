@@ -66,6 +66,14 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
 
   // Webhook service callbacks
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {
+    // DEBUG: Log embeds data in UI
+    console.log('🎯 UI RECEIVED TWEET WITH EMBEDS:', {
+      id: webhookTweet.id,
+      username: webhookTweet.username,
+      embeds: webhookTweet.embeds,
+      embedsLength: webhookTweet.embeds?.length || 0
+    });
+    
     const now = Date.now() // Get exact current time
     const tweet: Tweet = {
       ...webhookTweet,
@@ -314,9 +322,11 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                     )}
 
                       {/* Embeds Media */}
-                      {tweet.embeds && tweet.embeds.length > 0 && (
-                        <div className="px-0 pt-2 space-y-2">
-                          {tweet.embeds.map((embed, index) => (
+                      {tweet.embeds && tweet.embeds.length > 0 && (() => {
+                        console.log('🎯 RENDERING EMBEDS:', tweet.embeds);
+                        return (
+                          <div className="px-0 pt-2 space-y-2">
+                            {tweet.embeds.map((embed, index) => (
                             <div key={index} className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
                               {embed.imageUrl && (
                                 <img 
@@ -357,7 +367,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                             </div>
                           ))}
                         </div>
-                      )}
+                        );
+                      })()}
                     
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">
