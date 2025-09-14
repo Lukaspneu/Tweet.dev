@@ -48,10 +48,12 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     return `${timeString} • ${timeAgo}`
   }
 
-  const filteredTweets = tweets.filter(tweet => 
-    tweet.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredTweets = tweets
+    .filter(tweet => 
+      tweet.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp (newest first)
 
   // Webhook service callbacks
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {

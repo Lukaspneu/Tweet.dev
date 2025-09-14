@@ -83,7 +83,20 @@ class WebhookService {
         const data = await response.json()
         console.log('📊 Received data:', { tweetCount: data.tweets?.length || 0, totalCount: data.count })
         if (data.tweets && Array.isArray(data.tweets)) {
-          data.tweets.forEach((tweet: any) => {
+          // Sort tweets by timestamp (newest first) before processing
+          const sortedTweets = data.tweets.sort((a: any, b: any) => {
+            const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : a.receivedAt || 0
+            const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : b.receivedAt || 0
+            return timestampB - timestampA // Newest first
+          })
+          
+          console.log('📊 Processing tweets in order:', sortedTweets.slice(0, 3).map(t => ({
+            id: t.id,
+            timestamp: t.timestamp || t.receivedAt,
+            username: t.username
+          })))
+          
+          sortedTweets.forEach((tweet: any) => {
             this.processTweet(tweet)
           })
         }
