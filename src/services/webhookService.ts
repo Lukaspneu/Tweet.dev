@@ -152,51 +152,53 @@ class WebhookService {
       console.log('🔍 STEP 4: RAW TWEET DATA BEING PROCESSED:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
       
-      // EXTRACT MEDIA FROM SPECIFIC STRUCTURES
+      // BRUTE FORCE EXTRACTION - FIND ANY MEDIA IN THE PAYLOAD
       const allImageUrls: string[] = [];
       const allVideoUrls: string[] = [];
       
-      // 1. Extract images from image.url structure
-      if (tweetData.image?.url) {
-        console.log('🖼️ FOUND IMAGE in image.url:', tweetData.image.url);
-        allImageUrls.push(tweetData.image.url);
-      }
-      
-      // 2. Extract videos from content field (video.twimg.com)
-      if (tweetData.content && typeof tweetData.content === 'string') {
-        const videoMatches = tweetData.content.match(/https:\/\/video\.twimg\.com\/[^\s)]+/g);
-        if (videoMatches) {
-          console.log('🎥 FOUND VIDEOS in content:', videoMatches);
-          allVideoUrls.push(...videoMatches);
-        }
-        
-        // Also check for any other video URLs
-        const otherVideoMatches = tweetData.content.match(/https:\/\/[^\s)]*\.(mp4|webm|mov|avi)/gi);
-        if (otherVideoMatches) {
-          console.log('🎥 FOUND OTHER VIDEOS in content:', otherVideoMatches);
-          allVideoUrls.push(...otherVideoMatches);
-        }
-      }
-      
-      // 3. Fallback: Search for any image URLs in the payload
-      const findImageUrls = (obj: any, path = ''): void => {
-        if (typeof obj === 'string' && obj.includes('http')) {
-          if (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
-            if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner')) {
+      // Search the ENTIRE payload for ANY media URLs
+      const searchForMedia = (obj: any, path = ''): void => {
+        if (typeof obj === 'string') {
+          // Check for image URLs
+          if (obj.includes('pbs.twimg.com') || obj.includes('media') || obj.match(/\.(jpg|jpeg|png|gif|webp|jfif|bmp|tiff)/i)) {
+            if (!obj.includes('profile') && !obj.includes('avatar') && !obj.includes('banner') && !obj.includes('header')) {
               console.log(`🖼️ FOUND IMAGE URL at ${path}:`, obj);
               allImageUrls.push(obj);
             }
           }
+          
+          // Check for video URLs
+          if (obj.includes('video.twimg.com') || obj.match(/\.(mp4|webm|mov|avi|mkv)/i)) {
+            console.log(`🎥 FOUND VIDEO URL at ${path}:`, obj);
+            allVideoUrls.push(obj);
+          }
+          
+          // Check for any http URLs that might be media
+          if (obj.includes('http') && (obj.includes('twimg') || obj.includes('media') || obj.includes('video'))) {
+            console.log(`🔍 FOUND POTENTIAL MEDIA URL at ${path}:`, obj);
+            if (obj.includes('pbs.twimg.com') && !allImageUrls.includes(obj)) {
+              allImageUrls.push(obj);
+            }
+            if (obj.includes('video.twimg.com') && !allVideoUrls.includes(obj)) {
+              allVideoUrls.push(obj);
+            }
+          }
         } else if (typeof obj === 'object' && obj !== null) {
           Object.keys(obj).forEach(key => {
-            findImageUrls(obj[key], path ? `${path}.${key}` : key);
+            searchForMedia(obj[key], path ? `${path}.${key}` : key);
           });
         }
       };
       
-      findImageUrls(tweetData);
-      console.log('🎯 ALL FOUND IMAGE URLS:', allImageUrls);
-      console.log('🎯 ALL FOUND VIDEO URLS:', allVideoUrls);
+      console.log('🔍 BRUTE FORCE SEARCHING ENTIRE PAYLOAD FOR MEDIA...');
+      searchForMedia(tweetData);
+      
+      // Remove duplicates
+      const uniqueImageUrls = [...new Set(allImageUrls)];
+      const uniqueVideoUrls = [...new Set(allVideoUrls)];
+      
+      console.log('🎯 UNIQUE IMAGE URLS FOUND:', uniqueImageUrls);
+      console.log('🎯 UNIQUE VIDEO URLS FOUND:', uniqueVideoUrls);
 
       // Deep analysis of all objects
       Object.keys(tweetData).forEach(key => {
@@ -679,7 +681,7 @@ class WebhookService {
       // CREATE EMBEDS FROM FOUND MEDIA
       
       // Create embeds from found images
-      const imageEmbeds = allImageUrls.map(url => ({
+      const imageEmbeds = uniqueImageUrls.map(url => ({
         type: 'photo',
         imageUrl: url,
         title: 'Tweet Image',
@@ -687,7 +689,7 @@ class WebhookService {
       }));
       
       // Create embeds from found videos
-      const videoEmbeds = allVideoUrls.map(url => ({
+      const videoEmbeds = uniqueVideoUrls.map(url => ({
         type: 'video',
         videoUrl: url,
         title: 'Tweet Video',
@@ -701,14 +703,14 @@ class WebhookService {
       console.log('🎯 TOTAL PROCESSED EMBEDS:', processedEmbeds);
 
       // Set primary image and video URLs from found media
-      const primaryImageUrl = allImageUrls.length > 0 ? allImageUrls[0] : imageUrl;
-      const primaryVideoUrl = allVideoUrls.length > 0 ? allVideoUrls[0] : videoUrl;
+      const primaryImageUrl = uniqueImageUrls.length > 0 ? uniqueImageUrls[0] : imageUrl;
+      const primaryVideoUrl = uniqueVideoUrls.length > 0 ? uniqueVideoUrls[0] : videoUrl;
       
       console.log('🎯 SETTING PRIMARY MEDIA URLs:', {
         primaryImageUrl,
         primaryVideoUrl,
-        foundImages: allImageUrls.length,
-        foundVideos: allVideoUrls.length
+        foundImages: uniqueImageUrls.length,
+        foundVideos: uniqueVideoUrls.length
       });
 
       const tweet: WebhookTweet = {
