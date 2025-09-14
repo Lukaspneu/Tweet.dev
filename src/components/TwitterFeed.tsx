@@ -23,6 +23,16 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [displayLimit, setDisplayLimit] = useState(10) // Start with 10 tweets
   const [maxTweets] = useState(50) // Maximum tweets to prevent lag
+  const [currentTime, setCurrentTime] = useState<number>(Date.now())
+
+  // Continuous timer to update every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
 
   const handleDeployClick = () => {
     if (onLaunchModalOpen) {
@@ -31,8 +41,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   }
 
   const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now()
-    const diff = now - timestamp
+    const diff = currentTime - timestamp
     const seconds = Math.floor(diff / 1000)
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
@@ -52,9 +61,9 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
 
   const filteredTweets = tweets
     .filter(tweet => 
-      tweet.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    tweet.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tweet.username.toLowerCase().includes(searchTerm.toLowerCase())
+  )
     .sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp (newest first)
     .slice(0, displayLimit) // Limit display to prevent lag
 
@@ -62,7 +71,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {
     const tweet: Tweet = {
       ...webhookTweet,
-      timestamp: webhookTweet.timestamp ? new Date(webhookTweet.timestamp).getTime() : Date.now()
+      timestamp: currentTime // Use current time so it starts at "0s ago"
     }
     
     setTweets(prevTweets => {
@@ -77,7 +86,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       
       return newTweets
     })
-  }, [maxTweets])
+  }, [maxTweets, currentTime])
 
   const handleError = useCallback((error: string) => {
     setErrorMessage(error)
