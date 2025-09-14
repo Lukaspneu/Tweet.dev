@@ -68,6 +68,7 @@ class WebhookService {
 
   private async checkForNewTweets() {
     try {
+      console.log('🔍 Checking for new tweets...')
       // INSTANT real-time fetch - optimized for speed
       const response = await fetch('https://deckdev-app.onrender.com/api/latest-tweets', {
         method: 'GET',
@@ -80,22 +81,25 @@ class WebhookService {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 Received data:', { tweetCount: data.tweets?.length || 0, totalCount: data.count })
         if (data.tweets && Array.isArray(data.tweets)) {
           data.tweets.forEach((tweet: any) => {
             this.processTweet(tweet)
           })
         }
+      } else {
+        console.error('❌ Failed to fetch tweets:', response.status, response.statusText)
       }
     } catch (error) {
-      // Silent error - don't spam console for network issues
+      console.error('❌ Polling error:', error)
       if (this.status === 'connected') {
-        console.warn('Polling error:', error)
+        this.updateStatus('error')
       }
     }
   }
 
   private startPollingLoop() {
-    // INSTANT real-time polling - 100ms for maximum speed
+    // More reasonable polling interval - 2 seconds for stability
     const pollInterval = setInterval(async () => {
       try {
         await this.checkForNewTweets()
@@ -105,7 +109,7 @@ class WebhookService {
         clearInterval(pollInterval)
         this.scheduleReconnect()
       }
-    }, 100) // 100ms - INSTANT real-time updates (10 calls/sec)
+    }, 2000) // 2 seconds - more stable polling
   }
 
 
@@ -627,6 +631,7 @@ class WebhookService {
       }
 
       // Send to callback
+      console.log('📱 Sending tweet to UI:', tweet.id, tweet.username, tweet.text.substring(0, 50) + '...')
       this.callbacks.onNewTweet(tweet)
       
     } catch (error) {
