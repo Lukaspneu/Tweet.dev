@@ -302,7 +302,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                         return allVideos.map((videoUrl, index) => (
                           <div key={index} className="px-0 pt-2">
                             <div className="rounded-lg border border-gray-700/50 shadow-sm flex items-center justify-center bg-gray-900/50 w-full overflow-hidden">
-                              <div className="relative group w-full h-full flex items-center justify-center">
+                            <div className="relative group w-full h-full flex items-center justify-center">
                                 <video 
                                   src={videoUrl} 
                                   poster={tweet.videoPoster || tweet.imageUrl}
@@ -314,91 +314,59 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                                   Your browser does not support the video tag.
                                 </video>
                                 <button type="button" className="absolute top-2 right-2 bg-black/60 rounded-full p-1 transition-opacity duration-200 opacity-70 hover:opacity-100" aria-label="Expand video">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize w-6 h-6 text-white drop-shadow p-1" aria-hidden="true">
-                                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-                                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
-                                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
-                                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-                                  </svg>
-                                </button>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-maximize w-6 h-6 text-white drop-shadow p-1" aria-hidden="true">
+                                  <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                                  <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                                  <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                  <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                                </svg>
+                              </button>
                               </div>
                             </div>
                           </div>
                         ));
                       })()}
                       
-                      {/* Image Media - Enhanced with raw payload support */}
+                      {/* Image Media - Extract DIRECTLY from raw payload */}
                       {(() => {
-                        // Check for images in raw payload embeds
-                        const rawImages = tweet.rawPayload?.embeds?.filter((embed: any) => embed.image?.url).map((embed: any) => embed.image.url) || [];
-                        const allImages = [...(tweet.imageUrl ? [tweet.imageUrl] : []), ...rawImages];
+                        console.log('🎯 EXTRACTING IMAGES FROM COMPLETELY RAW PAYLOAD:', tweet.id);
+                        console.log('🎯 Raw payload keys:', Object.keys(tweet.rawPayload || {}));
                         
-                        console.log('🎯 CHECKING IMAGE DISPLAY FOR TWEET:', tweet.id);
-                        console.log('🎯 tweet.imageUrl:', tweet.imageUrl);
-                        console.log('🎯 tweet.rawPayload?.embeds:', tweet.rawPayload?.embeds);
-                        console.log('🎯 rawImages:', rawImages);
-                        console.log('🎯 allImages:', allImages);
-                        console.log('🎯 Will render images?', allImages.length > 0);
-                        
-                        // If no images found, let's search the entire raw payload
-                        if (allImages.length === 0 && tweet.rawPayload) {
-                          console.log('🔍 NO IMAGES FOUND - SEARCHING ENTIRE RAW PAYLOAD...');
-                          const searchForImages = (obj: any, path = ''): string[] => {
-                            const found: string[] = [];
-                            if (typeof obj === 'string' && obj.includes('http') && obj.includes('pbs.twimg.com')) {
-                              if (!obj.includes('profile') && !obj.includes('avatar') && obj.includes('media')) {
-                                found.push(obj);
-                                console.log(`🖼️ Found image URL at ${path}:`, obj);
-                              }
+                        // Search the ENTIRE raw payload for ANY image URLs
+                        const searchForImages = (obj: any, path = ''): string[] => {
+                          const found: string[] = [];
+                          if (typeof obj === 'string' && obj.includes('http') && obj.includes('pbs.twimg.com')) {
+                            if (!obj.includes('profile') && !obj.includes('avatar') && obj.includes('media')) {
+                              found.push(obj);
+                              console.log(`🖼️ Found image URL at ${path}:`, obj);
                             }
-                            if (typeof obj === 'object' && obj !== null) {
-                              Object.keys(obj).forEach(key => {
-                                found.push(...searchForImages(obj[key], path ? `${path}.${key}` : key));
-                              });
-                            }
-                            return found;
-                          };
-                          const foundImages = searchForImages(tweet.rawPayload);
-                          console.log('🔍 Found images in raw payload:', foundImages);
-                          if (foundImages.length > 0) {
-                            return foundImages.map((imageUrl, index) => (
-                              <div key={index} className="px-0 pt-2">
-                                <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
-                                  <img 
-                                    alt="Tweet image (found in raw payload)" 
-                                    className="w-full max-h-[400px] object-contain rounded-lg" 
-                                    src={imageUrl}
-                                    onError={(e) => {
-                                      console.error('❌ Raw payload image failed to load:', imageUrl);
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.border = '2px solid red';
-                                      target.alt = 'Image failed to load';
-                                    }}
-                                    onLoad={() => {
-                                      console.log('✅ Raw payload image loaded successfully:', imageUrl);
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            ));
                           }
-                        }
+                          if (typeof obj === 'object' && obj !== null) {
+                            Object.keys(obj).forEach(key => {
+                              found.push(...searchForImages(obj[key], path ? `${path}.${key}` : key));
+                            });
+                          }
+                          return found;
+                        };
                         
-                        return allImages.map((imageUrl, index) => (
+                        const foundImages = searchForImages(tweet.rawPayload);
+                        console.log('🔍 ALL FOUND IMAGES:', foundImages);
+                        
+                        return foundImages.map((imageUrl, index) => (
                           <div key={index} className="px-0 pt-2">
                             <div className="rounded-lg border border-gray-700/50 shadow-sm bg-gray-900/50 w-full overflow-hidden">
                               <img 
-                                alt="Tweet image" 
+                                alt="Tweet image (from raw payload)" 
                                 className="w-full max-h-[400px] object-contain rounded-lg" 
                                 src={imageUrl}
                                 onError={(e) => {
-                                  console.error('❌ Image failed to load:', imageUrl);
+                                  console.error('❌ Raw payload image failed to load:', imageUrl);
                                   const target = e.target as HTMLImageElement;
                                   target.style.border = '2px solid red';
                                   target.alt = 'Image failed to load';
                                 }}
                                 onLoad={() => {
-                                  console.log('✅ Image loaded successfully:', imageUrl);
+                                  console.log('✅ Raw payload image loaded successfully:', imageUrl);
                                 }}
                               />
                             </div>
@@ -516,8 +484,8 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
                               </pre>
                             </div>
                           </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
                     
                     </div>
                     <div className="flex items-center border-t border-gray-700/50 h-10">

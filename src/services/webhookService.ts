@@ -97,30 +97,29 @@ class WebhookService {
     try {
       console.log('🎯 RAW WEBHOOK PAYLOAD RECEIVED:', JSON.stringify(tweetData, null, 2));
       
-      // Pass the raw payload directly to the UI with minimal processing
+      // Pass the COMPLETELY RAW payload to the UI - NO PROCESSING AT ALL
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         username: tweetData.username || 'Unknown',
-        displayName: tweetData.username || 'Unknown',
+        displayName: tweetData.username || 'Unknown', 
         text: tweetData.content || tweetData.text || 'No content',
         timestamp: Date.now(),
         profileImage: tweetData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tweetData.username || 'Unknown')}&background=1f2937&color=fff`,
-        url: tweetData.embeds?.[0]?.url || `https://twitter.com/${tweetData.username}/status/${tweetData.id}`,
-        imageUrl: tweetData.embeds?.[0]?.image?.url,
-        videoUrl: tweetData.embeds?.[0]?.video?.url,
+        url: undefined, // Let UI extract this
+        imageUrl: undefined, // Let UI extract this
+        videoUrl: undefined, // Let UI extract this
         videoPoster: undefined,
         followerCount: '1K',
         source: 'webhook',
-        embeds: tweetData.embeds || [],
-        rawPayload: tweetData // Include the raw payload for direct display
+        embeds: undefined, // Let UI extract this
+        rawPayload: tweetData // The COMPLETE raw webhook payload
       }
       
-      console.log('✅ Sending raw payload to UI:', {
+      console.log('✅ Sending COMPLETELY RAW payload to UI:', {
         id: tweet.id,
         username: tweet.username,
-        hasEmbeds: !!tweet.embeds?.length,
-        hasImage: !!tweet.imageUrl,
-        hasVideo: !!tweet.videoUrl
+        rawPayloadKeys: Object.keys(tweetData),
+        rawPayloadSize: JSON.stringify(tweetData).length
       });
 
       this.onNewTweet?.(tweet)
