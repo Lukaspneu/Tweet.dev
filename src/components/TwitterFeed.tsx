@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, RefreshCw, Trash2, Play, Pause, Wifi, WifiOff, AlertCircle } from 'lucide-react'
+import { Search, Play, Pause } from 'lucide-react'
 import WebhookService, { WebhookTweet } from '../services/webhookService'
 
 interface TwitterFeedProps {
@@ -18,9 +18,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   const [showHoverBox, setShowHoverBox] = useState(false)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [hoverPauseEnabled, setHoverPauseEnabled] = useState(true)
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
-  const [webhookService, setWebhookService] = useState<WebhookService | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string>('')
   const [displayLimit, setDisplayLimit] = useState(10) // Start with 10 tweets
   const [maxTweets] = useState(50) // Maximum tweets to prevent lag
   const [currentTime, setCurrentTime] = useState<number>(Date.now())
@@ -89,15 +86,12 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
   }, [maxTweets, currentTime])
 
   const handleError = useCallback((error: string) => {
-    setErrorMessage(error)
     console.error('Webhook error:', error)
   }, [])
 
   const handleStatusChange = useCallback((status: 'connecting' | 'connected' | 'disconnected' | 'error') => {
-    setConnectionStatus(status)
-    if (status === 'connected') {
-      setErrorMessage('')
-    }
+    // Status change handling removed for simplicity
+    console.log('Webhook status:', status)
   }, [])
 
   // Initialize webhook service
@@ -108,7 +102,6 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       onStatusChange: handleStatusChange
     })
     
-    setWebhookService(service)
     service.startPolling()
 
     return () => {
@@ -116,16 +109,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     }
   }, [handleNewTweet, handleError, handleStatusChange])
 
-  // Test function for simulating tweets
-  const addTestTweet = () => {
-    if (webhookService) {
-      webhookService.simulateTweet()
-    }
-  }
-
-  const clearTweets = () => {
-    setTweets([])
-  }
+  // Removed unused functions: addTestTweet and clearTweets
 
   const loadMoreTweets = () => {
     setDisplayLimit(prev => Math.min(prev + 20, maxTweets)) // Load 20 more, up to maxTweets
@@ -202,49 +186,7 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
           </div>
         </div>
         
-        {/* Connection Status */}
-        <div className="flex items-center gap-1">
-          {connectionStatus === 'connected' && (
-            <div title="Connected to webhook">
-              <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-            </div>
-          )}
-          {connectionStatus === 'connecting' && (
-            <div title="Connecting...">
-              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 animate-spin" />
-            </div>
-          )}
-          {connectionStatus === 'error' && (
-            <div title="Connection error">
-              <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
-            </div>
-          )}
-          {connectionStatus === 'disconnected' && (
-            <div title="Disconnected">
-              <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
-            </div>
-          )}
-        </div>
-        
-        {/* Action Buttons */}
-        <button 
-          onClick={addTestTweet}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity" 
-          style={{backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)'}} 
-          title="Simulate Test Tweet"
-        >
-          <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" style={{color: 'rgb(192,192,192)'}} />
-        </button>
-        
-        <button 
-          onClick={clearTweets}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity" 
-          style={{backgroundColor: 'rgb(30,30,30)', borderColor: 'rgb(80,80,80)'}} 
-          title="Clear All Tweets"
-        >
-          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" style={{color: 'rgb(192,192,192)'}} />
-        </button>
-        
+        {/* Pause Button Only */}
         <button 
           onClick={() => setHoverPauseEnabled(!hoverPauseEnabled)}
           className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity ${hoverPauseEnabled ? 'bg-green-600/20' : 'bg-gray-600/20'}`}
@@ -262,83 +204,10 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
       <div className="flex-1 overflow-y-auto tweet-feed-container">
         {filteredTweets.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{backgroundColor: 'rgb(40,40,40)'}}>
-              {connectionStatus === 'connected' ? (
-                <Wifi className="w-8 h-8 text-green-400" />
-              ) : connectionStatus === 'connecting' ? (
-                <RefreshCw className="w-8 h-8 text-yellow-400 animate-spin" />
-              ) : connectionStatus === 'error' ? (
-                <WifiOff className="w-8 h-8 text-red-400" />
-              ) : (
-              <Search className="w-8 h-8" style={{color: 'rgb(185, 255, 93)'}} />
-              )}
-            </div>
-            
-            {connectionStatus === 'connected' ? (
-              <>
-                <h3 className="text-lg font-semibold text-white mb-2">Ready for Tweets</h3>
-            <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
-                  Webhook is connected and ready to receive tweets
+            <h3 className="text-lg font-semibold text-white mb-2">Waiting for new tweets</h3>
+            <p className="text-sm" style={{color: 'rgb(192,192,192)'}}>
+              Tweets will appear here when they arrive
             </p>
-            <div className="flex gap-2 mt-4">
-              <button 
-                onClick={addTestTweet}
-                className="px-3 py-1 rounded text-xs font-medium transition-colors"
-                style={{
-                  backgroundColor: 'rgb(185, 255, 93)',
-                  color: 'rgb(0,0,0)'
-                }}
-              >
-                    Test Tweet
-                  </button>
-                </div>
-                <div className="mt-2 text-xs text-green-400">
-                  ✅ Connected to webhook system
-                </div>
-              </>
-            ) : connectionStatus === 'connecting' ? (
-              <>
-                <h3 className="text-lg font-semibold text-white mb-2">Connecting...</h3>
-                <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
-                  Establishing connection to webhook system
-                </p>
-                <div className="mt-2 text-xs text-yellow-400">
-                  🔄 Connecting to webhook...
-                </div>
-              </>
-            ) : connectionStatus === 'error' ? (
-              <>
-                <h3 className="text-lg font-semibold text-white mb-2">Connection Error</h3>
-                <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
-                  {errorMessage || 'Failed to connect to webhook system'}
-                </p>
-                <div className="flex gap-2 mt-4">
-                  <button 
-                    onClick={() => webhookService?.reconnect()}
-                    className="px-3 py-1 rounded text-xs font-medium transition-colors"
-                    style={{
-                      backgroundColor: 'rgb(185, 255, 93)',
-                      color: 'rgb(0,0,0)'
-                    }}
-                  >
-                    Retry Connection
-              </button>
-            </div>
-                <div className="mt-2 text-xs text-red-400">
-                  ❌ Connection failed
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold text-white mb-2">Initializing...</h3>
-                <p className="text-sm mb-4" style={{color: 'rgb(192,192,192)'}}>
-                  Setting up webhook connection
-                </p>
-            <div className="mt-2 text-xs" style={{color: 'rgb(192,192,192)'}}>
-                  🔧 Initializing webhook system
-            </div>
-              </>
-            )}
           </div>
         ) : (
           <div className="space-y-0">
