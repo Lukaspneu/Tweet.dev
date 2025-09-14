@@ -131,7 +131,7 @@ class WebhookService {
   }
 
   private startPollingLoop() {
-    // More reasonable polling interval - 2 seconds for stability
+    // ULTRA-FAST polling - 200ms for lowest latency possible
     const pollInterval = setInterval(async () => {
       try {
         await this.checkForNewTweets()
@@ -141,7 +141,7 @@ class WebhookService {
         clearInterval(pollInterval)
         this.scheduleReconnect()
       }
-    }, 2000) // 2 seconds - more stable polling
+    }, 200) // 200ms for ultra-low latency
   }
 
 
