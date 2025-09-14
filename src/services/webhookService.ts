@@ -90,7 +90,9 @@ class WebhookService {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 STEP 1: RAW API RESPONSE:', data);
         console.log('📊 Received data:', { tweetCount: data.tweets?.length || 0, totalCount: data.count })
+        
         if (data.tweets && Array.isArray(data.tweets)) {
           // Sort tweets by timestamp (newest first) before processing
           const sortedTweets = data.tweets.sort((a: any, b: any) => {
@@ -102,13 +104,18 @@ class WebhookService {
           // Only process the latest 50 tweets to prevent lag
           const tweetsToProcess = sortedTweets.slice(0, 50)
           
+          console.log('🔍 STEP 2: RAW TWEET DATA FROM API:');
           console.log('📊 Processing tweets in order:', tweetsToProcess.slice(0, 3).map((t: any) => ({
             id: t.id,
             timestamp: t.timestamp || t.receivedAt,
-            username: t.username
+            username: t.username,
+            hasEmbeds: !!t.embeds,
+            embedsCount: t.embeds?.length || 0,
+            rawTweet: t
           })))
           
           tweetsToProcess.forEach((tweet: any) => {
+            console.log('🔍 STEP 3: PROCESSING INDIVIDUAL TWEET:', tweet);
             this.processTweet(tweet)
           })
         }
@@ -140,9 +147,9 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
-      // 🔍 SIMPLE DIRECT APPROACH - FIND ALL IMAGES
+      // 🔍 STEP 4: PROCESSING INDIVIDUAL TWEET DATA
       console.log('='.repeat(80));
-      console.log('🔍 RAW WEBHOOK PAYLOAD:');
+      console.log('🔍 STEP 4: RAW TWEET DATA BEING PROCESSED:');
       console.log('📦 Full webhook payload:', JSON.stringify(tweetData, null, 2));
       
       // DIRECT SEARCH FOR ANY IMAGE URLS
@@ -671,15 +678,18 @@ class WebhookService {
         embeds: processedEmbeds.length > 0 ? processedEmbeds : undefined
       }
 
-      // DEBUG: Log final tweet data to see what we're sending to the UI
+      // 🔍 STEP 5: FINAL TWEET OBJECT BEING SENT TO UI
+      console.log('🔍 STEP 5: FINAL TWEET OBJECT:');
       console.log('📱 Final tweet data:', {
         id: tweet.id,
         username: tweet.username,
-        text: tweet.text,
+        text: tweet.text.substring(0, 50) + '...',
+        embeds: tweet.embeds,
+        embedsCount: tweet.embeds?.length || 0,
         imageUrl: tweet.imageUrl,
-        videoUrl: tweet.videoUrl,
-        videoPoster: tweet.videoPoster
+        hasImageUrl: !!tweet.imageUrl
       });
+      console.log('📱 Full tweet object:', tweet);
 
       // Validate required fields
       if (!tweet.id || !tweet.text) {
@@ -687,7 +697,8 @@ class WebhookService {
         return
       }
 
-      // Send to callback
+      // 🔍 STEP 6: SENDING TO UI CALLBACK
+      console.log('🔍 STEP 6: SENDING TO UI CALLBACK');
       console.log('📱 Sending tweet to UI:', tweet.id, tweet.username, tweet.text.substring(0, 50) + '...')
       this.callbacks.onNewTweet(tweet)
       

@@ -66,12 +66,16 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
 
   // Webhook service callbacks
   const handleNewTweet = useCallback((webhookTweet: WebhookTweet) => {
-    // DEBUG: Log embeds data in UI
+    // 🔍 STEP 7: UI RECEIVES TWEET FROM WEBHOOK SERVICE
+    console.log('🔍 STEP 7: UI RECEIVED TWEET FROM WEBHOOK SERVICE');
     console.log('🎯 UI RECEIVED TWEET WITH EMBEDS:', {
       id: webhookTweet.id,
       username: webhookTweet.username,
       embeds: webhookTweet.embeds,
-      embedsLength: webhookTweet.embeds?.length || 0
+      embedsLength: webhookTweet.embeds?.length || 0,
+      imageUrl: webhookTweet.imageUrl,
+      hasImageUrl: !!webhookTweet.imageUrl,
+      fullTweet: webhookTweet
     });
     
     const now = Date.now() // Get exact current time
@@ -83,13 +87,27 @@ const TwitterFeed: React.FC<TwitterFeedProps> = ({ onLaunchModalOpen }) => {
     setTweets(prevTweets => {
       // Check if tweet already exists (prevent duplicates)
       const exists = prevTweets.some(t => t.id === tweet.id)
-      if (exists) return prevTweets
+      if (exists) {
+        console.log('🔍 STEP 8: TWEET ALREADY EXISTS, SKIPPING');
+        return prevTweets;
+      }
+      
+      console.log('🔍 STEP 8: ADDING NEW TWEET TO STATE');
+      console.log('🎯 TWEET BEING ADDED TO STATE:', {
+        id: tweet.id,
+        username: tweet.username,
+        embeds: tweet.embeds,
+        embedsCount: tweet.embeds?.length || 0,
+        imageUrl: tweet.imageUrl,
+        hasImageUrl: !!tweet.imageUrl
+      });
       
       // Add new tweet and sort by timestamp (newest first)
       const newTweets = [tweet, ...prevTweets]
         .sort((a, b) => b.timestamp - a.timestamp) // Newest first
         .slice(0, maxTweets) // Keep only the latest maxTweets
       
+      console.log('🔍 STEP 9: TWEETS STATE UPDATED, TOTAL TWEETS:', newTweets.length);
       return newTweets
     })
   }, [maxTweets])
