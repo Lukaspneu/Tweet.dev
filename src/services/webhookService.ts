@@ -165,7 +165,13 @@ class WebhookService {
         displayName: tweetData.username || 'Unknown',
         text: cleanText,
         timestamp: Date.now(),
-        profileImage: tweetData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tweetData.username || 'Unknown')}&background=1f2937&color=fff`,
+        profileImage: tweetData.avatar_url || 
+                      tweetData.profileImage || 
+                      tweetData.profile_image || 
+                      tweetData.extension?.twitter_user_avatar ||
+                      tweetData.author?.profileImage ||
+                      tweetData.author?.avatar_url ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(tweetData.username || 'Unknown')}&background=1f2937&color=fff`,
         url: tweetData.embeds?.[0]?.url || `https://twitter.com/${tweetData.username}/status/${tweetData.id}`,
         imageUrl: imageUrl,
         videoUrl: videoUrl,
