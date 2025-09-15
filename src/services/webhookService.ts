@@ -12,7 +12,6 @@ interface WebhookTweet {
   followerCount: string
   source: string
   embeds?: any[]
-  rawPayload?: any // Add raw payload field
 }
 
 class WebhookService {
@@ -95,31 +94,93 @@ class WebhookService {
 
   private processTweet(tweetData: any) {
     try {
-      console.log('🎯 RAW WEBHOOK PAYLOAD RECEIVED:', JSON.stringify(tweetData, null, 2));
+      console.log('🔍 Processing tweet:', tweetData.id, tweetData.username);
       
-      // Pass the COMPLETELY RAW payload to the UI - NO PROCESSING AT ALL
+      // Extract images from embeds structure
+      let imageUrl: string | undefined;
+      let videoUrl: string | undefined;
+      const processedEmbeds: any[] = [];
+      
+      if (tweetData.embeds && Array.isArray(tweetData.embeds)) {
+        console.log('🔍 Found embeds array with', tweetData.embeds.length, 'items');
+        
+        tweetData.embeds.forEach((embed: any, index: number) => {
+          if (embed.image && embed.image.url) {
+            console.log(`✅ Found image in embed ${index}:`, embed.image.url);
+            
+            if (!imageUrl) {
+              imageUrl = embed.image.url;
+            }
+            
+            processedEmbeds.push({
+              type: 'image',
+              imageUrl: embed.image.url,
+              title: embed.author?.name || 'Image',
+              description: embed.description || ''
+            });
+          }
+          
+          if (embed.video && embed.video.url) {
+            console.log(`✅ Found video in embed ${index}:`, embed.video.url);
+            
+            if (!videoUrl) {
+              videoUrl = embed.video.url;
+            }
+            
+            processedEmbeds.push({
+              type: 'video',
+              videoUrl: embed.video.url,
+              title: embed.author?.name || 'Video',
+              description: embed.description || ''
+            });
+          }
+        });
+      }
+      
+      // Clean the text content
+      let cleanText = tweetData.content || tweetData.text || 'No content';
+      
+      // Handle markdown links like [text](url)
+      const markdownLinkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+      const linkMatches = [...cleanText.matchAll(markdownLinkRegex)];
+      
+      if (linkMatches.length > 0) {
+        // Extract the link text (first capture group)
+        cleanText = linkMatches.map(match => match[1]).join(' ').trim();
+      }
+      
+      // Clean up any remaining markdown or unwanted characters
+      cleanText = cleanText
+        .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1') // Remove any remaining markdown links
+        .replace(/\[Posted\]/g, '') // Remove [Posted] text
+        .replace(/\[Quoted\]/g, '') // Remove [Quoted] text
+        .replace(/\[Reposted\]/g, '') // Remove [Reposted] text
+        .replace(/https?:\/\/[^\s]+/g, '') // Remove all URLs
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .trim();
+      
       const tweet: WebhookTweet = {
         id: tweetData.id || `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         username: tweetData.username || 'Unknown',
-        displayName: tweetData.username || 'Unknown', 
-        text: tweetData.content || tweetData.text || 'No content',
+        displayName: tweetData.username || 'Unknown',
+        text: cleanText,
         timestamp: Date.now(),
         profileImage: tweetData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tweetData.username || 'Unknown')}&background=1f2937&color=fff`,
-        url: undefined, // Let UI extract this
-        imageUrl: undefined, // Let UI extract this
-        videoUrl: undefined, // Let UI extract this
+        url: tweetData.embeds?.[0]?.url || `https://twitter.com/${tweetData.username}/status/${tweetData.id}`,
+        imageUrl: imageUrl,
+        videoUrl: videoUrl,
         videoPoster: undefined,
         followerCount: '1K',
         source: 'webhook',
-        embeds: undefined, // Let UI extract this
-        rawPayload: tweetData // The COMPLETE raw webhook payload
+        embeds: processedEmbeds.length > 0 ? processedEmbeds : undefined
       }
       
-      console.log('✅ Sending COMPLETELY RAW payload to UI:', {
+      console.log('✅ Sending tweet to UI:', {
         id: tweet.id,
         username: tweet.username,
-        rawPayloadKeys: Object.keys(tweetData),
-        rawPayloadSize: JSON.stringify(tweetData).length
+        hasImage: !!tweet.imageUrl,
+        hasVideo: !!tweet.videoUrl,
+        imageUrl: tweet.imageUrl
       });
 
       this.onNewTweet?.(tweet)
