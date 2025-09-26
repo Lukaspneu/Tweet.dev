@@ -15,7 +15,12 @@ import {
   Wallet,
   Download,
   Crown,
-  X
+  X,
+  Settings,
+  Play,
+  Pause,
+  ArrowRight,
+  Clock
 } from 'lucide-react'
 import { useWalletStore } from '../stores/walletStore'
 import { WalletUtils } from '../utils/walletUtils'
@@ -34,12 +39,20 @@ const WalletManager: React.FC = () => {
     copyPrivateKeyToClipboard,
     exportPrivateKey,
     fetchAllBalances,
+    autoSenderConfigs,
+    createAutoSender,
+    updateAutoSender,
+    deleteAutoSender,
+    toggleAutoSender,
+    startAutoSenderMonitoring,
+    stopAutoSenderMonitoring,
   } = useWalletStore()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showAutoSenderModal, setShowAutoSenderModal] = useState(false)
   const [walletToDelete, setWalletToDelete] = useState<string | null>(null)
   const [withdrawAddress, setWithdrawAddress] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
@@ -52,6 +65,12 @@ const WalletManager: React.FC = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
+  
+  // Auto-sender state
+  const [autoSenderSourceWallet, setAutoSenderSourceWallet] = useState<string>('')
+  const [autoSenderDestinationWallet, setAutoSenderDestinationWallet] = useState<string>('')
+  const [autoSenderReserveAmount, setAutoSenderReserveAmount] = useState<string>('5')
+  const [isAutoSenderMonitoring, setIsAutoSenderMonitoring] = useState(false)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -77,6 +96,28 @@ const WalletManager: React.FC = () => {
       fetchAllBalances()
     }
   }, [wallets, fetchAllBalances])
+
+  // Auto-sender monitoring effect
+  useEffect(() => {
+    if (autoSenderConfigs.length > 0 && autoSenderConfigs.some(config => config.isActive)) {
+      if (!isAutoSenderMonitoring) {
+        startAutoSenderMonitoring()
+        setIsAutoSenderMonitoring(true)
+      }
+    } else {
+      if (isAutoSenderMonitoring) {
+        stopAutoSenderMonitoring()
+        setIsAutoSenderMonitoring(false)
+      }
+    }
+
+    return () => {
+      if (isAutoSenderMonitoring) {
+        stopAutoSenderMonitoring()
+        setIsAutoSenderMonitoring(false)
+      }
+    }
+  }, [autoSenderConfigs, isAutoSenderMonitoring, startAutoSenderMonitoring, stopAutoSenderMonitoring])
 
   const handleCreateWallet = () => {
     if (wallets.length >= 5) {
@@ -291,7 +332,53 @@ const WalletManager: React.FC = () => {
         setWalletToDelete(walletId)
         setShowDeleteModal(true)
         break
+      case 'autoSender':
+        setAutoSenderSourceWallet(walletId)
+        setShowAutoSenderModal(true)
+        break
     }
+  }
+
+  const handleCreateAutoSender = () => {
+    if (!autoSenderSourceWallet || !autoSenderDestinationWallet) {
+      setError('Please select both source and destination wallets')
+      return
+    }
+
+    if (autoSenderSourceWallet === autoSenderDestinationWallet) {
+      setError('Source and destination wallets must be different')
+      return
+    }
+
+    const reserveAmount = parseFloat(autoSenderReserveAmount)
+    if (isNaN(reserveAmount) || reserveAmount < 0) {
+      setError('Please enter a valid reserve amount')
+      return
+    }
+
+    try {
+      createAutoSender(autoSenderSourceWallet, autoSenderDestinationWallet, reserveAmount)
+      setSuccess('Auto-sender configuration created successfully!')
+      setShowAutoSenderModal(false)
+      setAutoSenderSourceWallet('')
+      setAutoSenderDestinationWallet('')
+      setAutoSenderReserveAmount('5')
+      setTimeout(() => setSuccess(''), 5000)
+    } catch (error) {
+      setError('Failed to create auto-sender configuration')
+    }
+  }
+
+  const handleToggleAutoSender = (configId: string) => {
+    toggleAutoSender(configId)
+    setSuccess('Auto-sender status updated')
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleDeleteAutoSender = (configId: string) => {
+    deleteAutoSender(configId)
+    setSuccess('Auto-sender configuration deleted')
+    setTimeout(() => setSuccess(''), 3000)
   }
 
   const selectedWallet = wallets.find(w => w.id === selectedWalletId)
@@ -335,6 +422,22 @@ const WalletManager: React.FC = () => {
             <Upload className="w-4 h-4" />
             <span>Import</span>
           </motion.button>
+          {wallets.length >= 2 && (
+            <motion.button
+              onClick={() => setShowAutoSenderModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+              style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: 'rgb(59, 130, 246)'
+              }}
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>Auto-Sender</span>
+            </motion.button>
+          )}
           <motion.button 
             onClick={() => fetchAllBalances()}
             className="p-2 rounded-lg transition-all duration-200"
@@ -481,6 +584,16 @@ const WalletManager: React.FC = () => {
                             <span>Dev Wallet</span>
                           </div>
                         )}
+                        {autoSenderConfigs.filter(config => config.sourceWalletId === wallet.id).map(config => (
+                          <div key={config.id} className="flex items-center space-x-1 px-3 py-1 rounded text-sm font-medium" style={{
+                            backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'rgba(80, 80, 80, 0.1)',
+                            border: config.isActive ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(80, 80, 80, 0.3)',
+                            color: config.isActive ? 'rgb(59, 130, 246)' : 'rgb(192, 192, 192)'
+                          }}>
+                            {config.isActive ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                            <span>Auto-Sender</span>
+                          </div>
+                        ))}
                       </div>
                       <div className="flex items-center space-x-6 text-sm">
                         <div>
@@ -580,6 +693,15 @@ const WalletManager: React.FC = () => {
                                 <Crown className="w-4 h-4" />
                                 <span>Make Dev</span>
                               </button>
+                              {wallets.length >= 2 && (
+                                <button
+                                  onClick={() => handleDropdownAction('autoSender', wallet.id)}
+                                  className="w-full px-4 py-2 text-left text-blue-400 hover:bg-blue-900/20 flex items-center space-x-3 transition-colors text-sm"
+                                >
+                                  <ArrowRight className="w-4 h-4" />
+                                  <span>Setup Auto-Sender</span>
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDropdownAction('delete', wallet.id)}
                                 className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-900/20 flex items-center space-x-3 transition-colors text-sm"
@@ -1036,6 +1158,264 @@ const WalletManager: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Auto-Sender Configuration Modal */}
+      <AnimatePresence>
+        {showAutoSenderModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowAutoSenderModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="rounded-xl p-6 w-full max-w-lg"
+              style={{
+                backgroundColor: 'rgb(32, 32, 32)',
+                border: '1px solid rgba(80, 80, 80, 0.3)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Auto-Sender Configuration</h3>
+                <button
+                  onClick={() => setShowAutoSenderModal(false)}
+                  className="p-2 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(80, 80, 80, 0.3)',
+                    border: '1px solid rgba(80, 80, 80, 0.5)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Source Wallet
+                  </label>
+                  <select
+                    value={autoSenderSourceWallet}
+                    onChange={(e) => setAutoSenderSourceWallet(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid rgba(80, 80, 80, 0.3)',
+                    }}
+                  >
+                    <option value="">Select source wallet</option>
+                    {wallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name} ({WalletUtils.formatPublicKey(wallet.publicKey)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Destination Wallet
+                  </label>
+                  <select
+                    value={autoSenderDestinationWallet}
+                    onChange={(e) => setAutoSenderDestinationWallet(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid rgba(80, 80, 80, 0.3)',
+                    }}
+                  >
+                    <option value="">Select destination wallet</option>
+                    {wallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name} ({WalletUtils.formatPublicKey(wallet.publicKey)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Reserve Amount (SOL)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={autoSenderReserveAmount}
+                    onChange={(e) => setAutoSenderReserveAmount(e.target.value)}
+                    placeholder="5.0"
+                    className="w-full px-3 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid rgba(80, 80, 80, 0.3)',
+                    }}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Amount to keep in source wallet for transaction fees
+                  </p>
+                </div>
+                
+                <div className="p-4 rounded-lg" style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-4 h-4 mt-0.5" style={{ color: 'rgb(59, 130, 246)' }} />
+                    <div className="text-gray-300 text-xs">
+                      <p className="font-medium mb-1" style={{ color: 'rgb(59, 130, 246)' }}>Auto-Sender Info:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Automatically transfers excess SOL every second</li>
+                        <li>Only transfers when balance is above $15 USD</li>
+                        <li>Keeps the specified reserve amount for fees</li>
+                        <li>Requires private key access for source wallet</li>
+                        <li>Monitor transactions in the transaction history</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3 mt-6">
+                <motion.button
+                  onClick={() => setShowAutoSenderModal(false)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    border: '1px solid rgba(80, 80, 80, 0.3)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={handleCreateAutoSender}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: 'rgb(59, 130, 246)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Create Auto-Sender
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Auto-Sender Configurations List */}
+      {autoSenderConfigs.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-md font-semibold text-white mb-4 flex items-center space-x-2">
+            <ArrowRight className="w-5 h-5" style={{ color: 'rgb(59, 130, 246)' }} />
+            <span>Auto-Sender Configurations</span>
+          </h4>
+          <div className="space-y-3">
+            {autoSenderConfigs.map((config) => {
+              const sourceWallet = wallets.find(w => w.id === config.sourceWalletId)
+              const destWallet = wallets.find(w => w.id === config.destinationWalletId)
+              
+              return (
+                <motion.div
+                  key={config.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-lg p-4 transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-4 mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            border: '1px solid rgba(59, 130, 246, 0.3)'
+                          }}>
+                            <ArrowRight className="w-4 h-4" style={{ color: 'rgb(59, 130, 246)' }} />
+                          </div>
+                          <div>
+                            <div className="text-sm text-white font-medium">
+                              {sourceWallet?.name} → {destWallet?.name}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Reserve: {config.reserveAmount} SOL | 
+                              Transfers: {config.transferCount} | 
+                              Total: {config.totalTransferred.toFixed(4)} SOL
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 px-2 py-1 rounded text-xs" style={{
+                            backgroundColor: config.isActive ? 'rgba(34, 197, 94, 0.1)' : 'rgba(80, 80, 80, 0.1)',
+                            border: config.isActive ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(80, 80, 80, 0.3)',
+                            color: config.isActive ? 'rgb(34, 197, 94)' : 'rgb(192, 192, 192)'
+                          }}>
+                            {config.isActive ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                            <span>{config.isActive ? 'Active' : 'Paused'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {config.lastTransfer > 0 && (
+                        <div className="flex items-center space-x-1 text-xs text-gray-400">
+                          <Clock className="w-3 h-3" />
+                          <span>Last transfer: {new Date(config.lastTransfer).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <motion.button
+                        onClick={() => handleToggleAutoSender(config.id)}
+                        className="px-3 py-1 rounded text-xs font-medium transition-all duration-200"
+                        style={{
+                          backgroundColor: config.isActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                          border: config.isActive ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)',
+                          color: config.isActive ? 'rgb(239, 68, 68)' : 'rgb(34, 197, 94)'
+                        }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {config.isActive ? 'Pause' : 'Resume'}
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleDeleteAutoSender(config.id)}
+                        className="px-3 py-1 rounded text-xs font-medium transition-all duration-200"
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          color: 'rgb(239, 68, 68)'
+                        }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        Delete
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
