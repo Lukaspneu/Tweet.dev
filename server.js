@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 // DeckDev Production Webhook Server - Optimized for Render with Video Support
 
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const express = require('express');
+const path = require('path');
 const { testConnection } = require('./src/utils/database.js');
 const autoSenderService = require('./src/services/autoSenderService.js');
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Create Express app with production optimizations
 const app = express();
@@ -694,4 +690,4 @@ testConnection().then(success => {
   console.log('⚠️  Database connection test failed:', error.message);
 });
 
-export default app;
+module.exports = app;
