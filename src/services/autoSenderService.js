@@ -1,5 +1,5 @@
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, Keypair } from '@solana/web3.js'
-import bs58 from 'bs58'
+const { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, Keypair } = require('@solana/web3.js')
+const bs58 = require('bs58')
 
 // Server-side Auto-Sender Service for 24/7 operation
 class AutoSenderService {
@@ -226,4 +226,4 @@ class AutoSenderService {
 // Create singleton instance
 const autoSenderService = new AutoSenderService()
 
-export default autoSenderService
+module.exports = autoSenderService

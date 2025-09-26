@@ -1,7 +1,7 @@
 // Simple database utilities for PostgreSQL
-import { dbConfig } from '../config/database.js';
+const { dbConfig } = require('../config/database.js');
 
-export class DatabaseConnection {
+class DatabaseConnection {
   constructor() {
     this.connection = null;
   }
@@ -42,10 +42,10 @@ export class DatabaseConnection {
   }
 }
 
-export const db = new DatabaseConnection();
+const db = new DatabaseConnection();
 
 // Helper function to test database connection
-export async function testConnection() {
+async function testConnection() {
   try {
     await db.connect();
     console.log('✅ Database connection successful');
@@ -55,3 +55,5 @@ export async function testConnection() {
     return false;
   }
 }
+
+module.exports = { DatabaseConnection, db, testConnection };

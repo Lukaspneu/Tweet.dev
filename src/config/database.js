@@ -1,5 +1,5 @@
 // Database configuration for Render PostgreSQL
-export const dbConfig = {
+const dbConfig = {
   // Render will provide DATABASE_URL environment variable
   connectionString: process.env.DATABASE_URL,
   
@@ -22,4 +22,4 @@ export const dbConfig = {
   }
 };
 
-export default dbConfig;
+module.exports = { dbConfig };

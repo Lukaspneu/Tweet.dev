@@ -4,8 +4,8 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { testConnection } from './src/utils/database.js';
-import autoSenderService from './src/services/autoSenderService.js';
+const { testConnection } = require('./src/utils/database.js');
+const autoSenderService = require('./src/services/autoSenderService.js');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
