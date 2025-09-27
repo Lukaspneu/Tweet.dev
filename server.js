@@ -4,7 +4,6 @@
 const express = require('express');
 const path = require('path');
 const { testConnection } = require('./src/utils/database.js');
-const autoSenderService = require('./src/services/autoSenderService.js');
 
 // Create Express app with production optimizations
 const app = express();
@@ -328,7 +327,6 @@ app.get('/health', async (req, res) => {
         render: true,
         alwaysOn: true
       },
-      autoSender: autoSenderService.getStatus(),
       server: {
         type: 'render-production',
         region: 'oregon',
@@ -464,186 +462,6 @@ app.get('/ping', (req, res) => {
   });
 });
 
-// AUTO-SENDER API ENDPOINTS
-
-// Get auto-sender status
-app.get('/api/auto-sender/status', (req, res) => {
-  try {
-    const status = autoSenderService.getStatus()
-    res.status(200).json({
-      success: true,
-      data: status,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
-
-// Add auto-sender configuration
-app.post('/api/auto-sender/add', async (req, res) => {
-  try {
-    const { sourcePrivateKey, sourcePublicKey, destinationPublicKey, reserveAmount, name } = req.body
-
-    // Validate required fields
-    if (!sourcePrivateKey || !sourcePublicKey || !destinationPublicKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields: sourcePrivateKey, sourcePublicKey, destinationPublicKey',
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    // Validate that source and destination are different
-    if (sourcePublicKey === destinationPublicKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Source and destination wallets must be different',
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    const config = autoSenderService.addAutoSender({
-      sourcePrivateKey,
-      sourcePublicKey,
-      destinationPublicKey,
-      reserveAmount: reserveAmount || 5,
-      name: name || 'Auto-Sender'
-    })
-
-    res.status(200).json({
-      success: true,
-      message: 'Auto-sender configuration added successfully',
-      data: config,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('❌ Auto-sender add error:', error)
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
-
-// Remove auto-sender configuration
-app.delete('/api/auto-sender/:id', (req, res) => {
-  try {
-    const { id } = req.params
-    const success = autoSenderService.removeAutoSender(id)
-    
-    if (success) {
-      res.status(200).json({
-        success: true,
-        message: 'Auto-sender configuration removed successfully',
-        timestamp: new Date().toISOString()
-      })
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Auto-sender configuration not found',
-        timestamp: new Date().toISOString()
-      })
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
-
-// Toggle auto-sender on/off
-app.post('/api/auto-sender/:id/toggle', (req, res) => {
-  try {
-    const { id } = req.params
-    const success = autoSenderService.toggleAutoSender(id)
-    
-    if (success) {
-      res.status(200).json({
-        success: true,
-        message: 'Auto-sender status updated successfully',
-        timestamp: new Date().toISOString()
-      })
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Auto-sender configuration not found',
-        timestamp: new Date().toISOString()
-      })
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
-
-// Update SOL to USD rate
-app.post('/api/auto-sender/rate', (req, res) => {
-  try {
-    const { solRate } = req.body
-    
-    if (!solRate || typeof solRate !== 'number' || solRate <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid SOL rate. Must be a positive number.',
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    autoSenderService.updateSolRate(solRate)
-    
-    res.status(200).json({
-      success: true,
-      message: `SOL rate updated to $${solRate} USD`,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
-
-// Update USD threshold
-app.post('/api/auto-sender/threshold', (req, res) => {
-  try {
-    const { threshold } = req.body
-    
-    if (!threshold || typeof threshold !== 'number' || threshold < 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid threshold. Must be a non-negative number.',
-        timestamp: new Date().toISOString()
-      })
-    }
-
-    autoSenderService.updateUsdThreshold(threshold)
-    
-    res.status(200).json({
-      success: true,
-      message: `USD threshold updated to $${threshold}`,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    })
-  }
-})
 
 // Serve static files from the dist directory (React app)
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -673,10 +491,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`❤️  Health: https://deckdev-app.onrender.com/health`);
   console.log(`📊 Status: https://deckdev-app.onrender.com/api/status`);
   console.log(`🏓 Ping: https://deckdev-app.onrender.com/ping`);
-  console.log(`💰 Auto-Sender Status: https://deckdev-app.onrender.com/api/auto-sender/status`);
   console.log('✨ Server ready for 24/7 production webhooks!');
   console.log('🔥 Optimized for Render always-on performance!');
-  console.log('💸 Auto-sender service ready for 24/7 SOL transfers!');
 });
 
 // Test database connection (non-blocking)
