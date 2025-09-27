@@ -273,7 +273,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       clearInterval(autoSenderInterval)
     }
 
-    // Start new monitoring interval (check every second)
+    // Start new monitoring interval (check every 0.5 seconds for ULTRA FAST transfers)
     const interval = setInterval(async () => {
       const { autoSenderConfigs, executeAutoTransfer } = get()
       
@@ -286,7 +286,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           }
         }
       }
-    }, 1000) // 1 second
+    }, 500) // 0.5 seconds - ULTRA FAST!
 
     set({ autoSenderInterval: interval })
   },

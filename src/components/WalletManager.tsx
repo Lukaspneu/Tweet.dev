@@ -1274,7 +1274,7 @@ const WalletManager: React.FC = () => {
                     <div className="text-gray-300 text-xs">
                       <p className="font-medium mb-1" style={{ color: 'rgb(59, 130, 246)' }}>Auto-Sender Info:</p>
                       <ul className="list-disc list-inside space-y-1">
-                        <li>Automatically transfers excess SOL every second</li>
+                        <li>Automatically transfers excess SOL every 0.5 seconds - ULTRA FAST!</li>
                         <li>Only transfers when balance is above $15 USD</li>
                         <li>Keeps the specified reserve amount for fees</li>
                         <li>Requires private key access for source wallet</li>

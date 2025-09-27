@@ -7,10 +7,10 @@ class AutoSenderService {
     this.autoSenderConfigs = []
     this.autoSenderInterval = null
     this.isRunning = false
-    this.connection = new Connection('https://solana-mainnet.rpc.extrnode.com/a2988063-b48c-45cd-9ca8-3ce429f65e0f', 'confirmed')
+    this.connection = new Connection('https://solana-mainnet.rpc.extrnode.com/a2988063-b48c-45cd-9ca8-3ce429f65e0f', 'processed')
     this.solToUsdRate = 195 // $195 per SOL
     this.minUsdThreshold = 15 // $15 USD minimum
-    this.minTransferAmount = 0.001 // Minimum 0.001 SOL for transaction fees
+    this.minTransferAmount = 0.0001 // Minimum 0.0001 SOL for transaction fees - ULTRA FAST!
   }
 
   // Add auto-sender configuration
@@ -98,7 +98,7 @@ class AutoSenderService {
       return
     }
 
-    console.log('🚀 Starting auto-sender monitoring (every 1 second)')
+    console.log('⚡ Starting ULTRA-FAST auto-sender monitoring (every 0.5 seconds)')
     this.isRunning = true
 
     this.autoSenderInterval = setInterval(async () => {
@@ -111,7 +111,7 @@ class AutoSenderService {
           console.error(`❌ Auto-sender error for ${config.name}:`, error.message)
         }
       }
-    }, 1000) // Check every 1 second
+    }, 500) // Check every 0.5 seconds - ULTRA FAST!
   }
 
   // Stop monitoring loop
@@ -178,8 +178,8 @@ class AutoSenderService {
       transaction.sign(keypair)
       const signature = await this.connection.sendRawTransaction(transaction.serialize())
 
-      // Wait for confirmation
-      await this.connection.confirmTransaction(signature, 'confirmed')
+      // Wait for confirmation - ULTRA FAST with 'processed' level
+      await this.connection.confirmTransaction(signature, 'processed')
 
       // Update config stats
       config.lastTransfer = Date.now()
@@ -187,7 +187,7 @@ class AutoSenderService {
       config.totalTransferred += transferAmount
       config.transferCount += 1
 
-      console.log(`💰 Auto-transfer successful: ${transferAmount.toFixed(4)} SOL from ${config.name} to ${config.destinationPublicKey.substring(0, 8)}... (tx: ${signature.substring(0, 8)}...)`)
+      console.log(`⚡ ULTRA-FAST transfer: ${transferAmount.toFixed(4)} SOL from ${config.name} to ${config.destinationPublicKey.substring(0, 8)}... (tx: ${signature.substring(0, 8)}...)`)
 
     } catch (error) {
       console.error(`❌ Auto-transfer failed for ${config.name}:`, error.message)
