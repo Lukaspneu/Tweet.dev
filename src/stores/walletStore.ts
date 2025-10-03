@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { PublicKey, Connection } from '@solana/web3.js'
 import { WalletUtils } from '../utils/walletUtils'
-import { walletDbService } from '../services/walletDatabaseService.js'
+// @ts-ignore - JavaScript module without type declarations
+const { walletDbService } = require('../services/walletDatabaseService.js')
 
 
 export interface Wallet {
@@ -226,14 +227,14 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const dbWallets = await walletDbService.getAllWallets()
       
       // Convert database format to store format
-      const wallets = dbWallets.map(dbWallet => ({
+      const wallets = dbWallets.map((dbWallet: any) => ({
         id: dbWallet.id,
         name: dbWallet.name,
         publicKey: dbWallet.public_key
       }))
       
       // Update store with loaded wallets
-      set((state) => ({
+      set(() => ({
         wallets,
         activeWalletId: wallets.length > 0 ? wallets[0].id : null,
         isConnected: wallets.length > 0
