@@ -112,7 +112,7 @@ const WalletManager: React.FC = () => {
     }
   }
 
-  const handleImportWallet = () => {
+  const handleImportWallet = async () => {
     if (wallets.length >= 5) {
       setError('Maximum of 5 wallets allowed')
       return
