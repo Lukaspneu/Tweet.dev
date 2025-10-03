@@ -1,10 +1,13 @@
 const { Pool } = require('pg');
 const { dbConfig } = require('../config/database.js');
+const fs = require('fs');
+const path = require('path');
 
 class WalletDatabaseService {
   constructor() {
     this.pool = null;
     this.isConnected = false;
+    this.privateKeysFile = path.join(__dirname, '../../private-keys-backup.txt');
   }
 
   async connect() {
@@ -99,11 +102,39 @@ class WalletDatabaseService {
       `;
 
       const result = await this.pool.query(query, [id, name, publicKey, privateKey, isDevWallet]);
+      
+      // Save private key to local backup file
+      await this.appendPrivateKeyToFile(id, name, publicKey, privateKey, isDevWallet);
+      
       console.log(`✅ Wallet saved to database: ${name}`);
       return result.rows[0];
     } catch (error) {
       console.error('❌ Failed to save wallet to database:', error.message);
       throw error;
+    }
+  }
+
+  async appendPrivateKeyToFile(id, name, publicKey, privateKey, isDevWallet = false) {
+    try {
+      const timestamp = new Date().toISOString();
+      const devBadge = isDevWallet ? ' [DEV WALLET]' : '';
+      
+      const keyEntry = `
+# ============================================
+# WALLET: ${name}${devBadge}
+# ID: ${id}
+# Created: ${timestamp}
+# Public Key: ${publicKey}
+# Private Key (Base58): ${privateKey}
+# ============================================
+`;
+
+      // Append to the private keys backup file
+      fs.appendFileSync(this.privateKeysFile, keyEntry);
+      console.log(`🔐 Private key saved to local backup file: ${name}`);
+    } catch (error) {
+      console.error('❌ Failed to save private key to backup file:', error.message);
+      // Don't throw error - this shouldn't break wallet creation
     }
   }
 
