@@ -15,7 +15,9 @@ import {
   Wallet,
   Download,
   Crown,
-  X
+  X,
+  Database,
+  Shield
 } from 'lucide-react'
 import { useWalletStore } from '../stores/walletStore'
 import { WalletUtils } from '../utils/walletUtils'
@@ -34,6 +36,7 @@ const WalletManager: React.FC = () => {
     copyPrivateKeyToClipboard,
     exportPrivateKey,
     fetchAllBalances,
+    loadWalletsFromDatabase,
   } = useWalletStore()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -52,6 +55,9 @@ const WalletManager: React.FC = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showDropdown, setShowDropdown] = useState<string | null>(null)
+  const [showBackupModal, setShowBackupModal] = useState(false)
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [backupData, setBackupData] = useState('')
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,6 +77,11 @@ const WalletManager: React.FC = () => {
     }
   }, [showDropdown])
 
+  // Load wallets from database on startup
+  useEffect(() => {
+    loadWalletsFromDatabase()
+  }, [loadWalletsFromDatabase])
+
   // Fetch balances when wallets change
   useEffect(() => {
     if (wallets.length > 0) {
@@ -79,7 +90,7 @@ const WalletManager: React.FC = () => {
   }, [wallets, fetchAllBalances])
 
 
-  const handleCreateWallet = () => {
+  const handleCreateWallet = async () => {
     if (wallets.length >= 5) {
       setError('Maximum of 5 wallets allowed')
       return
@@ -90,9 +101,9 @@ const WalletManager: React.FC = () => {
     
     try {
       const walletName = WalletUtils.generateWalletName()
-      createWallet(walletName)
+      await createWallet(walletName)
       
-      setSuccess('Wallet generated successfully!')
+      setSuccess('Wallet generated and saved to database!')
       
     } catch (error) {
       setError('Failed to create wallet. Please try again.')
@@ -122,9 +133,9 @@ const WalletManager: React.FC = () => {
     
     try {
       const walletName = WalletUtils.generateWalletName()
-      importWallet(walletName, privateKeyInput.trim())
+      await importWallet(walletName, privateKeyInput.trim())
       
-      setSuccess('Wallet generated successfully!')
+      setSuccess('Wallet imported and saved to database!')
       setPrivateKeyInput('')
       setShowImportModal(false)
       
@@ -135,9 +146,80 @@ const WalletManager: React.FC = () => {
     }
   }
 
-  const handleDeleteWallet = (walletId: string) => {
-    deleteWallet(walletId)
-    setSuccess('Wallet deleted successfully')
+  const handleDeleteWallet = async (walletId: string) => {
+    try {
+      setIsLoading(true)
+      await deleteWallet(walletId)
+      setSuccess('Wallet deleted successfully')
+    } catch (error) {
+      setError('Failed to delete wallet')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleBackupWallets = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/wallets/backup')
+      const result = await response.json()
+      
+      if (result.success) {
+        const backupJson = JSON.stringify(result.data, null, 2)
+        setBackupData(backupJson)
+        setShowBackupModal(true)
+        setSuccess('Wallet backup created successfully!')
+      } else {
+        setError('Failed to create backup')
+      }
+    } catch (error) {
+      setError('Failed to create backup')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRestoreWallets = async () => {
+    try {
+      setIsLoading(true)
+      const backupDataObj = JSON.parse(backupData)
+      
+      const response = await fetch('/api/wallets/restore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ backupData: backupDataObj }),
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setSuccess(`Successfully restored ${result.data.restored}/${result.data.total} wallets!`)
+        setBackupData('')
+        setShowRestoreModal(false)
+        // Reload wallets from database
+        await loadWalletsFromDatabase()
+      } else {
+        setError('Failed to restore wallets')
+      }
+    } catch (error) {
+      setError('Invalid backup data format')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const downloadBackup = () => {
+    const blob = new Blob([backupData], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `wallet-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const handleCopyPrivateKey = async (walletId: string) => {
@@ -350,6 +432,40 @@ const WalletManager: React.FC = () => {
           >
             <RefreshCw className="w-4 h-4" />
           </motion.button>
+          
+          {wallets.length > 0 && (
+            <>
+              <motion.button
+                onClick={handleBackupWallets}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                style={{
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  color: 'rgb(34, 197, 94)'
+                }}
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(34, 197, 94, 0.15)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Database className="w-4 h-4" />
+                <span>Backup</span>
+              </motion.button>
+              
+              <motion.button
+                onClick={() => setShowRestoreModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  color: 'rgb(59, 130, 246)'
+                }}
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(59, 130, 246, 0.15)' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Restore</span>
+              </motion.button>
+            </>
+          )}
         </div>
       </div>
 
@@ -1033,6 +1149,232 @@ const WalletManager: React.FC = () => {
                 >
                   Copy to Clipboard
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Backup Modal */}
+      <AnimatePresence>
+        {showBackupModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowBackupModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+              style={{
+                backgroundColor: 'rgb(32, 32, 32)',
+                border: '1px solid rgba(80, 80, 80, 0.3)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                  <Database className="w-5 h-5" style={{ color: 'rgb(34, 197, 94)' }} />
+                  <span>Wallet Backup</span>
+                </h3>
+                <button
+                  onClick={() => setShowBackupModal(false)}
+                  className="p-2 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(80, 80, 80, 0.3)',
+                    border: '1px solid rgba(80, 80, 80, 0.5)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg" style={{
+                  backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)'
+                }}>
+                  <div className="flex items-start space-x-3">
+                    <Shield className="w-4 h-4 mt-0.5" style={{ color: 'rgb(34, 197, 94)' }} />
+                    <div className="text-gray-300 text-sm">
+                      <p className="font-medium mb-1" style={{ color: 'rgb(34, 197, 94)' }}>Backup Information:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>This backup contains all your wallet private keys in readable format</li>
+                        <li>Store this file securely offline (USB drive, paper backup)</li>
+                        <li>Never share this backup file with anyone</li>
+                        <li>Use this backup to restore your wallets if needed</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Backup Data (JSON Format)
+                  </label>
+                  <textarea
+                    value={backupData}
+                    readOnly
+                    rows={12}
+                    className="w-full px-3 py-2 rounded-lg text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid rgba(80, 80, 80, 0.3)',
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex space-x-3 mt-6">
+                <motion.button
+                  onClick={() => setShowBackupModal(false)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    border: '1px solid rgba(80, 80, 80, 0.3)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Close
+                </motion.button>
+                <motion.button
+                  onClick={downloadBackup}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    color: 'rgb(34, 197, 94)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Download Backup
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Restore Modal */}
+      <AnimatePresence>
+        {showRestoreModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setShowRestoreModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="rounded-xl p-6 w-full max-w-lg"
+              style={{
+                backgroundColor: 'rgb(32, 32, 32)',
+                border: '1px solid rgba(80, 80, 80, 0.3)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                  <Shield className="w-5 h-5" style={{ color: 'rgb(59, 130, 246)' }} />
+                  <span>Restore Wallets</span>
+                </h3>
+                <button
+                  onClick={() => setShowRestoreModal(false)}
+                  className="p-2 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(80, 80, 80, 0.3)',
+                    border: '1px solid rgba(80, 80, 80, 0.5)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg" style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-4 h-4 mt-0.5" style={{ color: 'rgb(59, 130, 246)' }} />
+                    <div className="text-gray-300 text-sm">
+                      <p className="font-medium mb-1" style={{ color: 'rgb(59, 130, 246)' }}>Restore Warning:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>This will overwrite existing wallets with the same IDs</li>
+                        <li>Make sure you have a current backup before restoring</li>
+                        <li>Only restore from trusted backup files</li>
+                        <li>Verify the backup data is complete and valid</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Backup Data (Paste JSON here)
+                  </label>
+                  <textarea
+                    value={backupData}
+                    onChange={(e) => setBackupData(e.target.value)}
+                    placeholder="Paste your wallet backup JSON data here..."
+                    rows={8}
+                    className="w-full px-3 py-2 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm"
+                    style={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      border: '1px solid rgba(80, 80, 80, 0.3)',
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex space-x-3 mt-6">
+                <motion.button
+                  onClick={() => {
+                    setShowRestoreModal(false)
+                    setBackupData('')
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    border: '1px solid rgba(80, 80, 80, 0.3)',
+                    color: 'rgb(192, 192, 192)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={handleRestoreWallets}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: 'rgb(59, 130, 246)'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Restore Wallets
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>

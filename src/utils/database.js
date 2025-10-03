@@ -1,43 +1,63 @@
-// Simple database utilities for PostgreSQL
+// Database utilities for PostgreSQL with wallet support
+const { Pool } = require('pg');
 const { dbConfig } = require('../config/database.js');
 
 class DatabaseConnection {
   constructor() {
-    this.connection = null;
+    this.pool = null;
+    this.isConnected = false;
   }
 
   async connect() {
+    if (this.pool && this.isConnected) {
+      return true;
+    }
+
     if (!dbConfig.connectionString) {
       throw new Error('DATABASE_URL environment variable is not set');
     }
     
     try {
-      // For now, we'll use a simple connection approach
-      // In production, you might want to use a proper PostgreSQL client like 'pg'
-      console.log('Database connection configured:', {
-        hasConnectionString: !!dbConfig.connectionString,
-        host: dbConfig.host,
-        database: dbConfig.database
+      // Create connection pool
+      this.pool = new Pool({
+        connectionString: dbConfig.connectionString,
+        ssl: dbConfig.ssl,
+        ...dbConfig.pool
       });
-      
+
+      // Test connection
+      const client = await this.pool.connect();
+      console.log('✅ Database connection successful');
+      client.release();
+      this.isConnected = true;
       return true;
     } catch (error) {
-      console.error('Database connection failed:', error);
+      console.error('❌ Database connection failed:', error.message);
+      this.isConnected = false;
       throw error;
     }
   }
 
   async query(sql, params = []) {
-    // Placeholder for database queries
-    // You'll need to implement actual PostgreSQL queries here
-    console.log('Executing query:', sql, params);
-    return [];
+    if (!this.pool) {
+      await this.connect();
+    }
+
+    try {
+      const result = await this.pool.query(sql, params);
+      return result;
+    } catch (error) {
+      console.error('❌ Database query failed:', error.message);
+      throw error;
+    }
   }
 
   async close() {
-    if (this.connection) {
-      // Close connection logic here
-      this.connection = null;
+    if (this.pool) {
+      await this.pool.end();
+      this.pool = null;
+      this.isConnected = false;
+      console.log('✅ Database connection closed');
     }
   }
 }
@@ -48,10 +68,10 @@ const db = new DatabaseConnection();
 async function testConnection() {
   try {
     await db.connect();
-    console.log('✅ Database connection successful');
+    console.log('✅ Database connection test successful');
     return true;
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    console.error('❌ Database connection test failed:', error.message);
     return false;
   }
 }

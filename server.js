@@ -4,6 +4,7 @@
 const express = require('express');
 const path = require('path');
 const { testConnection } = require('./src/utils/database.js');
+const { walletDbService } = require('./src/services/walletDatabaseService.js');
 
 // Create Express app with production optimizations
 const app = express();
@@ -462,6 +463,83 @@ app.get('/ping', (req, res) => {
   });
 });
 
+// WALLET DATABASE API ENDPOINTS
+
+// Get wallet backup (all wallets with private keys)
+app.get('/api/wallets/backup', async (req, res) => {
+  try {
+    const backup = await walletDbService.backupWallets()
+    res.status(200).json({
+      success: true,
+      data: backup,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
+// Restore wallets from backup
+app.post('/api/wallets/restore', async (req, res) => {
+  try {
+    const { backupData } = req.body
+
+    if (!backupData || !backupData.wallets) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid backup data format',
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    const result = await walletDbService.restoreWallets(backupData)
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully restored ${result.restored}/${result.total} wallets`,
+      data: result,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
+
+// Get all wallets (public data only)
+app.get('/api/wallets', async (req, res) => {
+  try {
+    const wallets = await walletDbService.getAllWallets()
+    // Remove private keys from response for security
+    const publicWallets = wallets.map(wallet => ({
+      id: wallet.id,
+      name: wallet.name,
+      publicKey: wallet.public_key,
+      isDevWallet: wallet.is_dev_wallet,
+      createdAt: wallet.created_at,
+      updatedAt: wallet.updated_at
+    }))
+    
+    res.status(200).json({
+      success: true,
+      data: publicWallets,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    })
+  }
+})
 
 // Serve static files from the dist directory (React app)
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -495,10 +573,17 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🔥 Optimized for Render always-on performance!');
 });
 
-// Test database connection (non-blocking)
-testConnection().then(success => {
+// Test database connection and initialize wallet database (non-blocking)
+testConnection().then(async (success) => {
   if (success) {
     console.log('✅ Database connection established');
+    try {
+      await walletDbService.connect();
+      await walletDbService.createTables();
+      console.log('✅ Wallet database initialized successfully');
+    } catch (error) {
+      console.error('❌ Wallet database initialization failed:', error.message);
+    }
   } else {
     console.log('⚠️  Database connection failed - running without database');
   }

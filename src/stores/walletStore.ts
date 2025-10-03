@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { PublicKey, Connection } from '@solana/web3.js'
 import { WalletUtils } from '../utils/walletUtils'
+import { walletDbService } from '../services/walletDatabaseService.js'
 
 
 export interface Wallet {
@@ -22,15 +23,17 @@ interface WalletState {
   
   
   // Actions
-  createWallet: (name: string) => { wallet: Wallet; privateKey: string }
-  importWallet: (name: string, privateKey: string) => Wallet
-  deleteWallet: (id: string) => void
+  createWallet: (name: string) => Promise<{ wallet: Wallet; privateKey: string }>
+  importWallet: (name: string, privateKey: string) => Promise<Wallet>
+  deleteWallet: (id: string) => Promise<void>
   setActiveWallet: (id: string) => void
   getWalletPrivateKey: (id: string) => string | null
   exportPrivateKey: (id: string) => string | null
   copyPrivateKeyToClipboard: (id: string) => Promise<boolean>
   fetchBalance: (walletId: string) => Promise<number>
   fetchAllBalances: () => Promise<void>
+  loadWalletsFromDatabase: () => Promise<void>
+  saveWalletToDatabase: (wallet: Wallet, privateKey: string) => Promise<void>
   
   
   // Temporary private key storage (in memory only)
@@ -52,7 +55,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   tempPrivateKeys: new Map(),
   
 
-  createWallet: (name: string) => {
+  createWallet: async (name: string) => {
     try {
       // Generate new keypair using utility function
       const { privateKey, publicKey } = WalletUtils.generateKeypair()
@@ -63,6 +66,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         publicKey,
       }
       
+      // Save to database first
+      await get().saveWalletToDatabase(wallet, privateKey)
+      
       // Store wallet (without private key)
       set((state) => ({
         wallets: [...state.wallets, wallet],
@@ -73,6 +79,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       // Temporarily store private key in memory
       get().tempPrivateKeys.set(wallet.id, privateKey)
       
+      console.log(`✅ Wallet created and saved to database: ${name}`)
       return { wallet, privateKey }
     } catch (error) {
       console.error('Error creating wallet:', error)
@@ -80,7 +87,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
 
-  importWallet: (name: string, privateKey: string) => {
+  importWallet: async (name: string, privateKey: string) => {
     try {
       // Import wallet using utility function
       const { publicKey } = WalletUtils.importFromPrivateKey(privateKey)
@@ -91,6 +98,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         publicKey,
       }
       
+      // Save to database first
+      await get().saveWalletToDatabase(wallet, privateKey)
+      
       // Store wallet (without private key)
       set((state) => ({
         wallets: [...state.wallets, wallet],
@@ -101,6 +111,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       // Temporarily store private key in memory
       get().tempPrivateKeys.set(wallet.id, privateKey)
       
+      console.log(`✅ Wallet imported and saved to database: ${name}`)
       return wallet
     } catch (error) {
       console.error('Error importing wallet:', error)
@@ -108,15 +119,25 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
 
-  deleteWallet: (id: string) => {
-    set((state) => ({
-      wallets: state.wallets.filter((wallet) => wallet.id !== id),
-      activeWalletId: state.activeWalletId === id ? null : state.activeWalletId,
-      isConnected: state.activeWalletId === id ? false : state.isConnected,
-    }))
-    
-    // Remove from temporary storage
-    get().tempPrivateKeys.delete(id)
+  deleteWallet: async (id: string) => {
+    try {
+      // Delete from database first
+      await walletDbService.deleteWallet(id)
+      
+      set((state) => ({
+        wallets: state.wallets.filter((wallet) => wallet.id !== id),
+        activeWalletId: state.activeWalletId === id ? null : state.activeWalletId,
+        isConnected: state.activeWalletId === id ? false : state.isConnected,
+      }))
+      
+      // Remove from temporary storage
+      get().tempPrivateKeys.delete(id)
+      
+      console.log(`✅ Wallet deleted from database: ${id}`)
+    } catch (error) {
+      console.error('Error deleting wallet:', error)
+      throw new Error('Failed to delete wallet')
+    }
   },
 
   setActiveWallet: (id: string) => {
@@ -193,6 +214,51 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       })
       return { balances: newBalances }
     })
+  },
+
+  loadWalletsFromDatabase: async () => {
+    try {
+      // Initialize database connection and create tables
+      await walletDbService.connect()
+      await walletDbService.createTables()
+      
+      // Load all wallets from database
+      const dbWallets = await walletDbService.getAllWallets()
+      
+      // Convert database format to store format
+      const wallets = dbWallets.map(dbWallet => ({
+        id: dbWallet.id,
+        name: dbWallet.name,
+        publicKey: dbWallet.public_key
+      }))
+      
+      // Update store with loaded wallets
+      set((state) => ({
+        wallets,
+        activeWalletId: wallets.length > 0 ? wallets[0].id : null,
+        isConnected: wallets.length > 0
+      }))
+      
+      console.log(`✅ Loaded ${wallets.length} wallets from database`)
+    } catch (error) {
+      console.error('Error loading wallets from database:', error)
+      // Don't throw error to prevent app crash - just log and continue with empty wallets
+    }
+  },
+
+  saveWalletToDatabase: async (wallet: Wallet, privateKey: string) => {
+    try {
+      await walletDbService.saveWallet({
+        id: wallet.id,
+        name: wallet.name,
+        publicKey: wallet.publicKey,
+        privateKey: privateKey,
+        isDevWallet: false
+      })
+    } catch (error) {
+      console.error('Error saving wallet to database:', error)
+      throw error
+    }
   },
 
 }))
